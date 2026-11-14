@@ -3,41 +3,48 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#1b1b1a" />
-    <meta name="description" content="Deddeh.com. Writing, projects, and notes." />
+    <meta name="theme-color" content="#161513" />
+    <meta name="description" content="Deddeh.com. A personal index, in draft." />
     <meta name="robots" content="noindex, nofollow" />
-    <title>Deddeh.com — Index</title>
+    <title>Deddeh.com</title>
     <link rel="icon" type="image/svg+xml" href="./favicon.svg" />
   </head>
   <body>
     <a class="skip-link" href="#index">Skip to index</a>
-    <div class="site-shell">
-      <header class="site-header">
-        <a class="identity" href="./" aria-label="Deddeh.com, return to index"><span aria-hidden="true" class="identity-mark"></span>deddeh.com</a>
-        <a href="#index" class="header-index">Index <span aria-hidden="true">↙</span></a>
+    <div class="stage" aria-hidden="true"></div>
+    <div class="shell">
+      <header class="top">
+        <a class="identity" href="./" aria-label="deddeh.com, home">deddeh.com<span class="caret" aria-hidden="true"></span></a>
+        <p class="top-note">Personal index <span aria-hidden="true">/</span> in draft</p>
       </header>
 
       <main id="index" tabindex="-1">
-        <div class="index-heading"><h1>Index</h1><span class="index-rule" aria-hidden="true"></span></div>
-        <nav class="index-nav" aria-label="Writing, projects, and notes">
-          <div class="entry" data-section="writing">
-            <h2><button type="button" class="entry-toggle" id="writing-toggle" aria-controls="writing-panel" aria-expanded="false"><span class="entry-number" aria-hidden="true">01</span><span class="entry-label"><span class="entry-word">Writing</span></span><span class="entry-symbol" aria-hidden="true"><span></span><span></span></span></button></h2>
-            <section class="entry-panel" id="writing-panel" aria-labelledby="writing-toggle" hidden><div class="panel-body"><p>No writing published yet.</p><button type="button" class="close-section" aria-label="Close Writing">Close <span aria-hidden="true">×</span></button></div></section>
-          </div>
-          <div class="entry" data-section="projects">
-            <h2><button type="button" class="entry-toggle" id="projects-toggle" aria-controls="projects-panel" aria-expanded="false"><span class="entry-number" aria-hidden="true">02</span><span class="entry-label"><span class="entry-word">Projects</span></span><span class="entry-symbol" aria-hidden="true"><span></span><span></span></span></button></h2>
-            <section class="entry-panel" id="projects-panel" aria-labelledby="projects-toggle" hidden><div class="panel-body"><p>No projects published yet.</p><button type="button" class="close-section" aria-label="Close Projects">Close <span aria-hidden="true">×</span></button></div></section>
-          </div>
-          <div class="entry" data-section="notes">
-            <h2><button type="button" class="entry-toggle" id="notes-toggle" aria-controls="notes-panel" aria-expanded="false"><span class="entry-number" aria-hidden="true">03</span><span class="entry-label"><span class="entry-word">Notes</span></span><span class="entry-symbol" aria-hidden="true"><span></span><span></span></span></button></h2>
-            <section class="entry-panel" id="notes-panel" aria-labelledby="notes-toggle" hidden><div class="panel-body"><p>No notes published yet.</p><button type="button" class="close-section" aria-label="Close Notes">Close <span aria-hidden="true">×</span></button></div></section>
-          </div>
+        <h1 class="sr-only">Deddeh.com</h1>
+        <nav class="toc" aria-label="Sections">
+          <p class="label" aria-hidden="true">Index</p>
+          <ol>
+            <li><button type="button" class="toc-item" data-section="writing" aria-pressed="false"><span class="num" aria-hidden="true">01</span><span class="word"><span class="word-text">Writing</span></span><span class="desc">essays &amp; observations</span></button></li>
+            <li><button type="button" class="toc-item" data-section="projects" aria-pressed="false"><span class="num" aria-hidden="true">02</span><span class="word"><span class="word-text">Projects</span></span><span class="desc">software &amp; experiments</span></button></li>
+            <li><button type="button" class="toc-item" data-section="notes" aria-pressed="false"><span class="num" aria-hidden="true">03</span><span class="word"><span class="word-text">Notes</span></span><span class="desc">links &amp; marginalia</span></button></li>
+          </ol>
         </nav>
-      </main>
 
-      <footer class="site-footer"><p>Nothing published yet.</p><a href="#index" class="footer-index">Index <span aria-hidden="true">↑</span></a></footer>
+        <div class="sheet-slot" aria-hidden="true"></div>
+
+        <div class="readout" aria-hidden="true">
+          <p class="readout-caption">(mostly)</p>
+          <p class="readout-word"><span class="readout-text">Unwritten</span><span class="readout-wipe"></span></p>
+          <span class="readout-measure"></span>
+        </div>
+
+        <div class="colophon">
+          <p class="label" aria-hidden="true">About</p>
+          <p class="about">A personal site for essays, notes on markets and long-term decisions, and software experiments. The pages are still blank, so the blocks stand in for the text.</p>
+          <p class="detail" role="status">Move across the page, or choose a section.</p>
+        </div>
+      </main>
     </div>
-    <noscript><p class="noscript-note">The index is empty. Enable JavaScript to explore its interactive sections.</p></noscript>
+    <noscript><p class="noscript-note">Nothing is published yet. JavaScript adds the interactive page.</p></noscript>
     <script type="module" src="/src/main.js"></script>
   </body>
 </html>

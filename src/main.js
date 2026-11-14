@@ -1,152 +1,141 @@
-import '@fontsource-variable/space-grotesk';
-import '@fontsource/archivo-black/latin-400.css';
+import '@fontsource-variable/archivo/wdth.css';
+import '@fontsource/instrument-serif/latin-400-italic.css';
 import '@fontsource/ibm-plex-mono/latin-400.css';
+import '@fontsource/ibm-plex-mono/latin-500.css';
 import './style.css';
 import { gsap } from 'gsap';
 
-const nav = document.querySelector('.index-nav');
-const entries = [...nav.querySelectorAll('.entry')];
-const toggles = entries.map((entry) => entry.querySelector('.entry-toggle'));
-const motion = window.matchMedia('(prefers-reduced-motion: reduce)');
-let reducedMotion = motion.matches;
-let opened = null;
-let hovered = null;
-let focused = null;
-let active = null;
-let field = null;
-let entrance = null;
-document.documentElement.classList.add('enhanced');
+const SECTIONS = {
+  writing: { word: 'Writing', caption: '(nothing yet under)', accent: 'var(--blue)', detail: 'Writing: essays and observations. Nothing published yet.' },
+  projects: { word: 'Projects', caption: '(nothing yet under)', accent: 'var(--green)', detail: 'Projects: software and experiments. Nothing published yet.' },
+  notes: { word: 'Notes', caption: '(nothing yet under)', accent: 'var(--orange)', detail: 'Notes: links and marginalia. Nothing published yet.' },
+};
+const IDLE = { word: 'Unwritten', caption: '(mostly)', accent: 'var(--ink)', detail: 'Move across the page, or choose a section.' };
 
-function syncSelection() {
-  const next = hovered ?? focused ?? opened;
+const root = document.documentElement;
+const toc = document.querySelector('.toc');
+const items = [...toc.querySelectorAll('.toc-item')];
+const readout = document.querySelector('.readout');
+const wordBox = readout.querySelector('.readout-word');
+const wordText = readout.querySelector('.readout-text');
+const wipe = readout.querySelector('.readout-wipe');
+const measure = readout.querySelector('.readout-measure');
+const caption = readout.querySelector('.readout-caption');
+const detail = document.querySelector('.detail');
+const motion = window.matchMedia('(prefers-reduced-motion: reduce)');
+let reduced = motion.matches;
+let pinned = null, hovered = null, focused = null, active = null;
+let field = null, swap = null, shown = IDLE, baseSize = 120;
+
+// Every readout word fills the same measure: the width axis does the fitting.
+function fit(word) {
+  const target = readout.clientWidth;
+  measure.textContent = word;
+  measure.style.fontSize = `${baseSize}px`;
+  const width = (wdth) => { measure.style.fontVariationSettings = `'wdth' ${wdth}`; return measure.getBoundingClientRect().width; };
+  if (!target || !width(100)) return { wdth: 62, size: baseSize };
+  let low = 62, high = 125;
+  if (width(low) >= target) return { wdth: low, size: baseSize * (target / width(low)) };
+  if (width(high) <= target) return { wdth: high, size: baseSize };
+  for (let i = 0; i < 9; i++) { const mid = (low + high) / 2; if (width(mid) > target) high = mid; else low = mid; }
+  return { wdth: low, size: baseSize };
+}
+function setWord(state) {
+  const { wdth, size } = fit(state.word);
+  wordText.textContent = state.word;
+  wordBox.style.fontSize = `${size}px`;
+  wordBox.style.fontVariationSettings = `'wdth' ${wdth.toFixed(1)}`;
+  caption.textContent = state.caption;
+}
+function layout() {
+  baseSize = Math.min(readout.clientWidth / 4.15, window.innerHeight * .3);
+  setWord(shown);
+}
+
+function show(state) {
+  if (state === shown) return;
+  shown = state;
+  detail.textContent = state.detail;
+  swap?.kill();
+  if (reduced) { root.style.setProperty('--accent', state.accent); setWord(state); gsap.set(wipe, { scaleX: 0 }); return; }
+  swap = gsap.timeline()
+    .set(wipe, { transformOrigin: 'left center' })
+    .to(wipe, { scaleX: 1, duration: .22, ease: 'power3.in' })
+    .add(() => { root.style.setProperty('--accent', state.accent); setWord(state); })
+    .set(wipe, { transformOrigin: 'right center' })
+    .to(wipe, { scaleX: 0, duration: .5, ease: 'power4.out' })
+    .fromTo(caption, { opacity: 0, x: -10 }, { opacity: 1, x: 0, duration: .4, ease: 'power2.out' }, '<');
+}
+
+function sync() {
+  const next = hovered ?? focused ?? pinned;
   if (next === active) return;
   active = next;
-  entries.forEach((entry) => {
-    const selected = entry === active;
-    entry.classList.toggle('is-active', selected);
-    gsap.to(entry.querySelector('.entry-word'), { x: selected ? 4 : 0, duration: reducedMotion ? 0 : .35, ease: 'power3.out', overwrite: 'auto' });
-  });
-  field?.select(active);
-}
-
-function updateURL(entry) {
-  const hash = entry ? `#${entry.dataset.section}` : '#index';
-  if (location.hash === hash) return;
-  if (location.protocol === 'file:') location.hash = hash;
-  else {
-    try { history.pushState({}, '', hash); } catch { /* The interface also works with restricted history. */ }
+  toc.classList.toggle('has-active', Boolean(active));
+  for (const item of items) {
+    const on = item === active;
+    item.classList.toggle('is-active', on);
+    gsap.to(item, { '--w': on ? 125 : 62, duration: reduced ? 0 : on ? .6 : .4, ease: on ? 'power4.out' : 'power2.inOut', overwrite: 'auto' });
   }
+  show(active ? SECTIONS[active.dataset.section] : IDLE);
+  field?.select(active?.dataset.section ?? 'blank');
 }
 
-function showSection(next, { writeURL = true, focusToggle = false, animate = true } = {}) {
-  if (next === opened) return;
-  const previous = opened;
-  opened = next;
-  entries.forEach((entry) => {
-    const isOpen = entry === opened;
-    const button = entry.querySelector('.entry-toggle');
-    const panel = entry.querySelector('.entry-panel');
-    button.setAttribute('aria-expanded', String(isOpen));
-    if (!isOpen && panel.contains(document.activeElement)) button.focus({ preventScroll: true });
-    panel.inert = !isOpen;
-    gsap.killTweensOf(panel);
-    if (isOpen) {
-      panel.hidden = false;
-      if (animate && !reducedMotion) gsap.fromTo(panel, { height: 0 }, { height: 'auto', duration: .45, ease: 'power3.out' });
-      else panel.style.height = '';
-    } else if (!panel.hidden) {
-      if (animate && !reducedMotion) gsap.to(panel, { height: 0, duration: .28, ease: 'power2.inOut', onComplete() { panel.hidden = true; panel.style.height = ''; } });
-      else { panel.hidden = true; panel.style.height = ''; }
-    }
-  });
-  if (writeURL) updateURL(opened);
-  if (focusToggle && previous) previous.querySelector('.entry-toggle').focus({ preventScroll: true });
-  syncSelection();
-}
-
-function restoreLocation() {
-  const name = location.hash.slice(1);
-  const target = entries.find((entry) => entry.dataset.section === name) ?? null;
-  showSection(target, { writeURL: false, animate: false });
-}
-
-entries.forEach((entry, index) => {
-  const toggle = toggles[index];
-  toggle.addEventListener('click', () => showSection(opened === entry ? null : entry));
-  entry.querySelector('.close-section').addEventListener('click', () => showSection(null, { focusToggle: true }));
-  entry.addEventListener('pointerenter', (event) => {
-    if (event.pointerType !== 'mouse') return;
-    hovered = entry;
-    syncSelection();
-  });
-  entry.addEventListener('pointerleave', (event) => {
-    if (event.pointerType !== 'mouse') return;
-    hovered = null;
-    syncSelection();
-    field?.relax();
-  });
-  toggle.addEventListener('pointermove', (event) => {
-    if (event.pointerType !== 'mouse' || reducedMotion) return;
-    const bounds = toggle.getBoundingClientRect();
-    field?.bend((event.clientX - bounds.left) / bounds.width);
-  });
-  toggle.addEventListener('keydown', (event) => {
-    let target;
-    if (event.key === 'ArrowDown') target = (index + 1) % toggles.length;
-    if (event.key === 'ArrowUp') target = (index + toggles.length - 1) % toggles.length;
-    if (event.key === 'Home') target = 0;
-    if (event.key === 'End') target = toggles.length - 1;
-    if (target === undefined) return;
-    event.preventDefault();
-    toggles[target].focus();
-  });
-});
-nav.addEventListener('focusin', (event) => {
-  focused = event.target.closest('.entry');
-  syncSelection();
-});
-nav.addEventListener('focusout', () => {
-  queueMicrotask(() => {
-    focused = nav.contains(document.activeElement) ? document.activeElement.closest('.entry') : null;
-    syncSelection();
-  });
-});
-document.addEventListener('keydown', (event) => {
-  if (event.key === 'Escape' && opened) {
-    event.preventDefault();
-    showSection(null, { focusToggle: true });
+function pin(item, { writeURL = true } = {}) {
+  pinned = item;
+  for (const other of items) other.setAttribute('aria-pressed', String(other === pinned));
+  if (writeURL) {
+    try { history.replaceState(null, '', pinned ? `#${pinned.dataset.section}` : location.pathname + location.search); } catch { /* restricted history */ }
   }
-});
-for (const anchor of document.querySelectorAll('.identity, .header-index, .footer-index')) {
-  anchor.addEventListener('click', (event) => {
-    event.preventDefault();
-    showSection(null);
-    document.querySelector('#index').focus({ preventScroll: true });
-    window.scrollTo({ top: 0, behavior: reducedMotion ? 'instant' : 'smooth' });
-  });
+  sync();
 }
-window.addEventListener('popstate', restoreLocation);
-window.addEventListener('hashchange', restoreLocation);
+function restore() {
+  pin(items.find((item) => item.dataset.section === location.hash.slice(1)) ?? null, { writeURL: false });
+}
+
+items.forEach((item, index) => {
+  item.addEventListener('click', () => { if (pinned === item) { hovered = null; pin(null); } else pin(item); });
+  item.addEventListener('pointerenter', (event) => { if (event.pointerType === 'mouse') { hovered = item; sync(); } });
+  item.addEventListener('pointerleave', (event) => { if (event.pointerType === 'mouse') { hovered = null; sync(); } });
+  item.addEventListener('keydown', (event) => {
+    const step = { ArrowDown: 1, ArrowUp: -1 }[event.key];
+    const target = event.key === 'Home' ? 0 : event.key === 'End' ? items.length - 1 : step ? (index + step + items.length) % items.length : null;
+    if (target === null) return;
+    event.preventDefault();
+    items[target].focus();
+  });
+});
+toc.addEventListener('focusin', (event) => {
+  const item = event.target.closest('.toc-item');
+  let keyboard = true;
+  try { keyboard = item?.matches(':focus-visible') ?? false; } catch { /* older engines: treat focus as keyboard focus */ }
+  focused = keyboard ? item : null;
+  sync();
+});
+toc.addEventListener('focusout', () => { focused = null; queueMicrotask(sync); });
+document.addEventListener('keydown', (event) => { if (event.key === 'Escape' && pinned) { hovered = null; pin(null); } });
+window.addEventListener('hashchange', restore);
+window.addEventListener('resize', layout);
 motion.addEventListener('change', (event) => {
-  reducedMotion = event.matches;
-  entrance?.kill();
-  gsap.set('.entry-word', { y: 0, opacity: 1 });
-  for (const entry of entries) {
-    const panel = entry.querySelector('.entry-panel');
-    gsap.killTweensOf(panel);
-    panel.hidden = entry !== opened;
-    panel.style.height = '';
-  }
-  field?.setReducedMotion(reducedMotion);
+  reduced = event.matches;
+  swap?.progress(1);
+  field?.setReducedMotion(reduced);
 });
-restoreLocation();
-if (!reducedMotion) {
-  entrance = gsap.fromTo('.entry-word', { y: 16, opacity: 0 }, { y: 0, opacity: 1, duration: .7, stagger: .08, ease: 'power3.out' });
+
+layout();
+restore();
+document.fonts?.ready.then(layout);
+if (!reduced) {
+  gsap.timeline({ defaults: { ease: 'power3.out' } })
+    .from('.toc-item', { y: 18, opacity: 0, duration: .7, stagger: .07 })
+    .fromTo(wipe, { scaleX: 1, transformOrigin: 'right center' }, { scaleX: 0, duration: .9, ease: 'power4.inOut' }, .1)
+    .from('.readout-caption, .colophon', { opacity: 0, duration: .8 }, .5);
 }
 
-// The index works immediately. Three.js progressively enhances the same highlight.
-import('./selection-field.js').then(({ SelectionField }) => {
-  field = new SelectionField(nav, reducedMotion);
-  field.select(active);
-}).catch(() => { /* Keep the CSS highlight if the graphics module cannot load. */ });
+// The page is complete without graphics; the block field is added when WebGL is there.
+const stage = document.querySelector('.stage');
+import('./field.js').then(({ Field }) => {
+  field = new Field(stage, document.querySelector('.sheet-slot'), reduced);
+  field.select(active?.dataset.section ?? 'blank');
+}).catch(() => stage.classList.add('is-fallback'));
 window.addEventListener('pagehide', (event) => { if (!event.persisted) field?.dispose(); });

@@ -2,9 +2,7 @@ import { readFileSync } from 'node:fs';
 import { beforeAll, afterAll, beforeEach, describe, it, expect, vi } from 'vitest';
 
 const $ = (selector) => document.querySelector(selector);
-const entry = (name) => $(`[data-section="${name}"]`);
-const toggle = (name) => $(`#${name}-toggle`);
-const panel = (name) => $(`#${name}-panel`);
+const item = (name) => $(`.toc-item[data-section="${name}"]`);
 function mouse(element, type) {
   const event = new Event(type);
   Object.defineProperty(event, 'pointerType', { value: 'mouse' });
@@ -17,110 +15,58 @@ beforeAll(async () => {
   await import('../src/main.js');
 });
 afterAll(() => vi.restoreAllMocks());
-beforeEach(async () => {
-  window.setTestReducedMotion(true);
-  for (const name of ['writing', 'projects', 'notes']) mouse(entry(name), 'pointerleave');
-  $('.identity').click();
-  $('.identity').focus();
-  await Promise.resolve();
+beforeEach(() => {
+  for (const name of ['writing', 'projects', 'notes']) mouse(item(name), 'pointerleave');
+  document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
+  document.activeElement?.blur();
 });
 
-describe('One integrated personal index', () => {
-  it('contains only the three real, currently empty sections', () => {
-    expect(document.querySelectorAll('.entry-toggle')).toHaveLength(3);
-    expect(document.querySelectorAll('.entry-panel:not([hidden])')).toHaveLength(0);
-    expect(document.querySelectorAll('[data-design-choice], dialog, .spatial-study')).toHaveLength(0);
+describe('The index and its readout', () => {
+  it('starts idle with three sections and no invented content', () => {
+    expect(document.querySelectorAll('.toc-item')).toHaveLength(3);
+    expect($('.readout-text').textContent).toBe('Unwritten');
+    expect($('.detail').textContent).toContain('choose a section');
+    expect(document.querySelectorAll('article, time')).toHaveLength(0);
   });
 
-  it.each(['writing', 'projects', 'notes'])('opens %s and toggles it closed', (name) => {
-    toggle(name).click();
-    expect(panel(name).hidden).toBe(false);
-    expect(panel(name).textContent).toContain(`No ${name} published yet.`);
-    expect(toggle(name).getAttribute('aria-expanded')).toBe('true');
-    expect(location.hash).toBe(`#${name}`);
-    toggle(name).click();
-    expect(panel(name).hidden).toBe(true);
-    expect(toggle(name).getAttribute('aria-expanded')).toBe('false');
+  it.each(['writing', 'projects', 'notes'])('previews %s on hover and returns to idle', (name) => {
+    mouse(item(name), 'pointerenter');
+    expect(item(name).classList.contains('is-active')).toBe(true);
+    expect($('.readout-text').textContent.toLowerCase()).toBe(name);
+    expect($('.detail').textContent).toContain('Nothing published yet.');
+    mouse(item(name), 'pointerleave');
+    expect($('.readout-text').textContent).toBe('Unwritten');
   });
 
-  it('keeps just one section open when moving through the index', () => {
-    toggle('writing').click();
-    toggle('projects').click();
-    expect(panel('writing').hidden).toBe(true);
-    expect(panel('projects').hidden).toBe(false);
-    expect(panel('notes').hidden).toBe(true);
-  });
-
-  it('moves focus through the index with arrows, Home, and End', () => {
-    toggle('writing').focus();
-    toggle('writing').dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown' }));
-    expect(document.activeElement).toBe(toggle('projects'));
-    toggle('projects').dispatchEvent(new KeyboardEvent('keydown', { key: 'End' }));
-    expect(document.activeElement).toBe(toggle('notes'));
-    toggle('notes').dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown' }));
-    expect(document.activeElement).toBe(toggle('writing'));
-    toggle('writing').dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowUp' }));
-    expect(document.activeElement).toBe(toggle('notes'));
-    toggle('notes').dispatchEvent(new KeyboardEvent('keydown', { key: 'Home' }));
-    expect(document.activeElement).toBe(toggle('writing'));
-  });
-
-  it('closes from Escape and restores focus to the owning section', () => {
-    toggle('notes').click();
-    entry('notes').querySelector('.close-section').focus();
+  it('pins one section at a time, records it in the URL, and Escape clears it', () => {
+    item('writing').click();
+    expect(item('writing').getAttribute('aria-pressed')).toBe('true');
+    expect(location.hash).toBe('#writing');
+    item('notes').click();
+    expect(item('writing').getAttribute('aria-pressed')).toBe('false');
+    expect(item('notes').getAttribute('aria-pressed')).toBe('true');
+    expect($('.readout-text').textContent).toBe('Notes');
     document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
-    expect(panel('notes').hidden).toBe(true);
-    expect(document.activeElement).toBe(toggle('notes'));
-    expect(location.hash).toBe('#index');
+    expect(item('notes').getAttribute('aria-pressed')).toBe('false');
+    expect(location.hash).toBe('');
+    expect($('.readout-text').textContent).toBe('Unwritten');
   });
 
-  it('closes from the inline control and returns focus', () => {
-    toggle('writing').click();
-    entry('writing').querySelector('.close-section').click();
-    expect(panel('writing').hidden).toBe(true);
-    expect(document.activeElement).toBe(toggle('writing'));
+  it('toggles a pinned section off when chosen again', () => {
+    item('projects').click();
+    item('projects').click();
+    expect(item('projects').getAttribute('aria-pressed')).toBe('false');
   });
 
-  it('selects one coherent highlight on hover and falls back to the open section', () => {
-    toggle('writing').click();
-    mouse(entry('projects'), 'pointerenter');
-    expect(entry('projects').classList.contains('is-active')).toBe(true);
-    expect(entry('writing').classList.contains('is-active')).toBe(false);
-    mouse(entry('projects'), 'pointerleave');
-    expect(entry('writing').classList.contains('is-active')).toBe(true);
-    expect(document.querySelectorAll('.is-active')).toHaveLength(1);
+  it('moves between sections with the arrow keys and previews the focused one', () => {
+    item('writing').focus();
+    item('writing').dispatchEvent(new KeyboardEvent('keydown', { key: 'ArrowDown', bubbles: true }));
+    expect(document.activeElement).toBe(item('projects'));
+    item('projects').dispatchEvent(new KeyboardEvent('keydown', { key: 'End', bubbles: true }));
+    expect(document.activeElement).toBe(item('notes'));
   });
 
-  it('restores section state when browser history changes', () => {
-    history.replaceState({}, '', '#projects');
-    window.dispatchEvent(new PopStateEvent('popstate'));
-    expect(panel('projects').hidden).toBe(false);
-    expect(toggle('projects').getAttribute('aria-expanded')).toBe('true');
-    history.replaceState({}, '', '#index');
-    window.dispatchEvent(new PopStateEvent('popstate'));
-    expect(panel('projects').hidden).toBe(true);
-  });
-
-  it('handles unknown section links without inventing content', () => {
-    history.replaceState({}, '', '#unpublished-article');
-    window.dispatchEvent(new PopStateEvent('popstate'));
-    expect(document.querySelectorAll('.entry-panel:not([hidden])')).toHaveLength(0);
-  });
-
-  it('finishes panel state immediately when reduced motion is enabled', () => {
-    window.setTestReducedMotion(false);
-    toggle('writing').click();
-    window.setTestReducedMotion(true);
-    expect(panel('writing').hidden).toBe(false);
-    expect(panel('writing').style.height).toBe('');
-    expect(entry('writing').querySelector('.entry-word').style.opacity).toBe('1');
-  });
-
-  it('retains the functional selection when WebGL is unavailable', () => {
-    toggle('projects').focus();
-    expect(entry('projects').classList.contains('is-active')).toBe(true);
-    expect($('.index-nav').classList.contains('graphics-ready')).toBe(false);
-    toggle('projects').click();
-    expect(panel('projects').hidden).toBe(false);
+  it('keeps the page usable when WebGL is unavailable', async () => {
+    await vi.waitFor(() => expect($('.stage').classList.contains('is-fallback')).toBe(true));
   });
 });

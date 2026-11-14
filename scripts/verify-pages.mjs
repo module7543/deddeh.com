@@ -21,31 +21,34 @@ try {
     assert.equal(response.status(), 200);
     assert.equal(page.url(), url, 'The preview must not redirect to a custom domain');
     await page.evaluate(() => document.fonts.ready);
-    const writing = page.getByRole('button', { name: 'Writing', exact: true });
-    const projects = page.getByRole('button', { name: 'Projects', exact: true });
-    const notes = page.getByRole('button', { name: 'Notes', exact: true });
+    const writing = page.getByRole('button', { name: /Writing/ });
+    const projects = page.getByRole('button', { name: /Projects/ });
+    const notes = page.getByRole('button', { name: /Notes/ });
+    const readout = page.locator('.readout-text');
+    await expect(readout).toHaveText('Unwritten');
     if (mobile) await writing.tap(); else await writing.click();
-    await expect(page.locator('#writing-panel')).toBeVisible();
-    await expect(writing).toHaveAttribute('aria-expanded', 'true');
+    await expect(writing).toHaveAttribute('aria-pressed', 'true');
+    await expect(readout).toHaveText('Writing');
     await projects.click();
-    await expect(page.locator('#projects-panel')).toBeVisible();
-    await expect(page.locator('#writing-panel')).toBeHidden();
+    await expect(writing).toHaveAttribute('aria-pressed', 'false');
+    await expect(readout).toHaveText('Projects');
     await notes.focus();
     await notes.press('Enter');
-    await expect(page.locator('#notes-panel')).toBeVisible();
+    await expect(page.locator('.detail')).toContainText('Notes');
     await notes.press('Escape');
-    await expect(page.locator('#notes-panel')).toBeHidden();
-    await expect(notes).toBeFocused();
+    await expect(notes).toHaveAttribute('aria-pressed', 'false');
     await writing.focus();
     await writing.press('ArrowDown');
     await expect(projects).toBeFocused();
     assert(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth), 'No horizontal overflow');
     if (!mobile) {
-      await writing.hover();
-      await expect(page.locator('[data-section="writing"]')).toHaveClass(/is-active/);
+      await page.mouse.move(700, 600);
+      await notes.hover();
+      await expect(notes).toHaveClass(/is-active/);
     }
-    await page.screenshot({ path: `artifacts/pages-${mobile ? 'mobile' : 'desktop'}.png`, fullPage: true, animations: 'disabled' });
-    console.log(`PASS ${mobile ? 'mobile touch/reduced motion' : 'desktop hover/keyboard'}: HTTP 200, assets, section toggles, exclusive expansion, Escape, focus return, arrow navigation, no overflow — ${url}`);
+    await page.waitForTimeout(1500);
+    await page.screenshot({ path: `artifacts/pages-${mobile ? 'mobile' : 'desktop'}.png`, fullPage: true });
+    console.log(`PASS ${mobile ? 'mobile touch/reduced motion' : 'desktop hover/keyboard'}: HTTP 200, assets, pin/unpin, readout, Escape, arrow navigation, no overflow — ${url}`);
     await context.close();
   }
   assert.deepEqual(failures, [], 'No failed assets or JavaScript page errors');
