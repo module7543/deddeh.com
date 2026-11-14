@@ -71,3 +71,5 @@ https://module7543.github.io/deddeh.com/
 In Settings → Pages, select **GitHub Actions** as the source if it is not already selected. A push to `main` starts the workflow; it also supports **Run workflow** from the Actions tab.
 
 `npm run build:pages` explicitly builds asset URLs beneath `/deddeh.com/`, including the lazy-loaded Three.js module and fonts. Local development and the portable preview keep their existing paths. The workflow does not configure a custom domain, create a CNAME, or change DNS.
+
+After deployment, the workflow opens the public preview in Chromium and checks HTTP/asset loading, section interactions, keyboard focus and Escape, touch activation, reduced motion, and horizontal overflow at desktop and phone widths. Desktop/mobile screenshots are saved in the `pages-browser-verification` workflow artifact. This check uses `scripts/verify-pages.mjs`; it does not modify the design.

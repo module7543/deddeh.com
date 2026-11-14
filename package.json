@@ -11,7 +11,8 @@
     "package:preview": "node scripts/package-preview.mjs",
     "test": "vitest run",
     "verify:preview": "node scripts/verify-preview.mjs",
-    "build:pages": "vite build --base=/deddeh.com/"
+    "build:pages": "vite build --base=/deddeh.com/",
+    "verify:pages": "node scripts/verify-pages.mjs"
   },
   "dependencies": {
     "@fontsource-variable/space-grotesk": "5.2.10",
@@ -21,6 +22,7 @@
     "three": "0.180.0"
   },
   "devDependencies": {
+    "@playwright/test": "1.56.1",
     "esbuild": "0.25.12",
     "jsdom": "27.2.0",
     "vite": "7.2.2",

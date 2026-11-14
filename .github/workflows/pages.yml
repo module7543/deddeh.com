@@ -14,6 +14,9 @@ concurrency:
 
 jobs:
   build:
+    permissions:
+      contents: read
+      pages: read
     runs-on: ubuntu-latest
     steps:
       - name: Check out source
@@ -39,6 +42,8 @@ jobs:
           path: dist
 
   deploy:
+    outputs:
+      page_url: ${{ steps.deployment.outputs.page_url }}
     needs: build
     runs-on: ubuntu-latest
     permissions:
@@ -51,3 +56,27 @@ jobs:
       - name: Deploy Pages artifact
         id: deployment
         uses: actions/deploy-pages@v4
+
+  verify:
+    needs: deploy
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - name: Install Chromium for the public preview check
+        run: npx playwright install --with-deps chromium
+      - name: Verify the deployed public website
+        run: npm run verify:pages
+        env:
+          PREVIEW_URL: ${{ needs.deploy.outputs.page_url }}
+      - name: Save desktop and mobile browser screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pages-browser-verification
+          path: artifacts/pages-*.png
+          if-no-files-found: ignore
