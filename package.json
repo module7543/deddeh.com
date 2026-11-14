@@ -10,7 +10,8 @@
     "check": "node --check src/main.js && node --check src/selection-field.js",
     "package:preview": "node scripts/package-preview.mjs",
     "test": "vitest run",
-    "verify:preview": "node scripts/verify-preview.mjs"
+    "verify:preview": "node scripts/verify-preview.mjs",
+    "build:pages": "vite build --base=/deddeh.com/"
   },
   "dependencies": {
     "@fontsource-variable/space-grotesk": "5.2.10",

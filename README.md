@@ -2,7 +2,7 @@
 
 A static personal index for writing, projects, and notes. One primary design, built around oversized navigation and a shared selection system. Every section is currently empty; no sample publications or personal claims are included.
 
-The maintainable source lives at the repository root. There is no production deployment workflow, domain configuration, or backend.
+The maintainable source lives at the repository root. A GitHub Actions workflow publishes a repository preview to GitHub Pages. There is no custom-domain configuration or backend.
 
 ## Preview locally
 
@@ -30,7 +30,7 @@ npm run build
 npm run preview
 ```
 
-`dist/` contains the static build, with relative asset URLs compatible with GitHub Pages. Build output and dependencies are ignored by Git. Publishing or connecting Deddeh.com is a separate, unauthorized next step.
+`dist/` contains the static build, with relative asset URLs compatible with GitHub Pages. Build output and dependencies are ignored by Git. The Pages preview uses the repository URL only. Connecting the Deddeh.com domain remains a separate, unauthorized next step.
 
 For an optional self-contained file preview:
 
@@ -61,3 +61,13 @@ Read [the design rationale](docs/DESIGN-REVIEW.md), [verification results and li
 - `scripts/` — optional portable-preview generation and DOM verification.
 
 The managed preview relay remains unavailable in the current development environment. Real-browser visual, mobile, and GPU verification has not been completed; see the verification notes before assessing the design.
+
+## GitHub Pages preview
+
+The workflow in `.github/workflows/pages.yml` checks and builds the Vite app, uploads only `dist/`, and deploys it to:
+
+https://module7543.github.io/deddeh.com/
+
+In Settings → Pages, select **GitHub Actions** as the source if it is not already selected. A push to `main` starts the workflow; it also supports **Run workflow** from the Actions tab.
+
+`npm run build:pages` explicitly builds asset URLs beneath `/deddeh.com/`, including the lazy-loaded Three.js module and fonts. Local development and the portable preview keep their existing paths. The workflow does not configure a custom domain, create a CNAME, or change DNS.
