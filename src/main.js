@@ -94,7 +94,10 @@ function restore() {
 }
 
 items.forEach((item, index) => {
-  item.addEventListener('click', () => { if (pinned === item) { hovered = null; pin(null); } else pin(item); });
+  item.addEventListener('click', (event) => {
+    if (event.detail === 0) hovered = null; // keyboard activation outranks a resting mouse
+    if (pinned === item) { hovered = null; pin(null); } else pin(item);
+  });
   item.addEventListener('pointerenter', (event) => { if (event.pointerType === 'mouse') { hovered = item; sync(); } });
   item.addEventListener('pointerleave', (event) => { if (event.pointerType === 'mouse') { hovered = null; sync(); } });
   item.addEventListener('keydown', (event) => {
@@ -110,6 +113,7 @@ toc.addEventListener('focusin', (event) => {
   let keyboard = true;
   try { keyboard = item?.matches(':focus-visible') ?? false; } catch { /* older engines: treat focus as keyboard focus */ }
   focused = keyboard ? item : null;
+  if (focused) hovered = null; // the keyboard takes over from a resting mouse
   sync();
 });
 toc.addEventListener('focusout', () => { focused = null; queueMicrotask(sync); });
