@@ -109,6 +109,15 @@ function contact() {
   return out;
 }
 
+// The paper's watermark: a D, four cells wide and eight rows tall, in the middle of the ruled sheet.
+// Nothing marks it at rest. Like any watermark it shows only against the light, which here is the pointer.
+export const WATERMARK = Array.from({ length: N }, (_, i) => {
+  const r = Math.floor(i / COLS) - 3, c = (i % COLS) - 3;
+  if (i === CURSOR || r < 0 || r > 7 || c < 0 || c > 3) return 0;
+  return c === 0 || (c === 3 ? r > 0 && r < 7 : r === 0 || r === 7) ? 1 : 0;
+});
+const MARK_REACH = 1500, MARK_HOLD = .78, MARK_GLOW = .28; // how far the light carries in the mark, how flat it stays, how warm it turns
+
 const FORMATIONS = { blank: blank(), writing: writing(), projects: projects(), contact: contact() };
 const SPIN = { blank: -.4, writing: -.34, projects: -.46, contact: -.3, card: 0 };
 const PITCH_X = -.98; // how far the sheet leans back when it is not laid flat
@@ -176,6 +185,7 @@ export class Field {
     this.to = FORMATIONS.blank;
     this.formations = { ...FORMATIONS };
     this.toColors = Object.fromEntries(Object.entries(FORMATIONS).map(([k, f]) => [k, f.map((b) => new Color(b.c))]));
+    this.paper = { v: 1 }; // 1 while the sheet is plain paper, the only state that carries the watermark
     this.flat = { v: 0 }; this.home = { x: 0, y: 0 }; this.cardEl = null;
     this.name = 'blank';
     this.delay = FORMATIONS.blank.map((b) => ((b.x - LEFT) / W) * .45 + ((rowY(0) - b.y) / (PITCH * ROWS)) * .55);
@@ -183,7 +193,7 @@ export class Field {
     this.pointer = { x: 0, y: 0, power: 0, tiltX: 0, tiltY: 0 };
     this.moveX = gsap.quickTo(this.pointer, 'x', { duration: .35, ease: 'power3.out' });
     this.moveY = gsap.quickTo(this.pointer, 'y', { duration: .35, ease: 'power3.out' });
-    this.matrix = new Matrix4(); this.color = new Color(); this.hi = new Color(C.ink);
+    this.matrix = new Matrix4(); this.color = new Color(); this.hi = new Color(C.ink); this.warm = new Color(0xc9a27a);
     this.inverse = new Matrix4(); this.origin = new Vector3(); this.dir = new Vector3();
     this.time = 0; this.visible = true; this.dirty = true;
 
@@ -247,6 +257,7 @@ export class Field {
     const tint = this.floor.material.uniforms.uTint.value, to = TINT[name];
     gsap.to(tint, { r: to.r, g: to.g, b: to.b, duration: this.reduced ? 0 : 1.1, ease: 'power2.out', overwrite: 'auto' });
     gsap.to(this.group.rotation, { z: SPIN[name], duration: this.reduced ? 0 : 1.3, ease: 'power3.inOut', overwrite: 'auto' });
+    gsap.to(this.paper, { v: name === 'blank' ? 1 : 0, duration: this.reduced ? 0 : name === 'blank' ? 1.6 : .3, ease: 'power2.out', overwrite: 'auto' });
     gsap.to(this.flat, { v: name === 'card' ? 1 : 0, duration: this.reduced ? 0 : 1.2, ease: 'power3.inOut', overwrite: 'auto' });
   }
 
@@ -269,7 +280,7 @@ export class Field {
   frame(delta) {
     if (!this.visible) return;
     const p = this.pointer;
-    const moving = this.progress.t < 1 || p.power > .002 || gsap.isTweening(this.group.rotation) || gsap.isTweening(this.floor.material.uniforms.uTint.value) || gsap.isTweening(this.flat);
+    const moving = this.progress.t < 1 || p.power > .002 || gsap.isTweening(this.group.rotation) || gsap.isTweening(this.floor.material.uniforms.uTint.value) || gsap.isTweening(this.flat) || gsap.isTweening(this.paper);
     if (this.reduced && !moving && !this.dirty) return;
     this.dirty = false;
     this.time += delta / 1000;
@@ -297,8 +308,11 @@ export class Field {
       const near = p.power * Math.exp(-(dx * dx + dy * dy) / 330);
       const wave = this.reduced ? 0 : .22 * (1 + Math.sin(this.time * .7 + s.x * .06 - s.y * .11));
       const arc = Math.sin(k * Math.PI) * 2.2;
-      let depth = BLOCK_Z + (near * 7 + wave) * (1 - flat * .7) + arc;
-      this.color.copy(s.col).lerp(this.hi, near * .6);
+      // In the watermark the paper is thinner: it stays down under the light and lets more of it through.
+      const mark = WATERMARK[i] * this.paper.v;
+      let depth = BLOCK_Z + (near * 7 * (1 - mark * MARK_HOLD) + wave) * (1 - flat * .7) + arc;
+      this.color.copy(s.col).lerp(this.hi, near * .6 * (1 - mark));
+      if (mark) this.color.lerp(this.warm, mark * MARK_GLOW * p.power * Math.exp(-(dx * dx + dy * dy) / MARK_REACH));
       if (i === CURSOR && !this.reduced) this.color.lerp(colors[0], (Math.sin(this.time * 3.2) > .2 ? 0 : .75) * (this.name === 'blank' ? 1 : 0));
       const visible = s.w > .06;
       if (!visible) depth = .001;
