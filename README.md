@@ -62,6 +62,14 @@ Projects is a small collection of things made, in collections. Today: **Apps** a
 
 Vite finds every `projects/**/index.html` by itself.
 
+## First real recording — Sweet on My Tongue
+
+The Music index now links to `projects/music/sweet-on-my-tongue/`, a song page with the owner's supplied lyrics and a link to the original Suno track. Its `data-src` points to `public/sweet-on-my-tongue.mp3`, which Vite copies into the static build. The recording is 3:26 long.
+
+**The binary MP3 still needs to be uploaded to `public/sweet-on-my-tongue.mp3` on this branch before the song can play.** The user-provided file cannot be transferred through the connected text-only GitHub editing API. Keep the PR unmerged until the audio file is added and a browser playback check passes.
+
+The existing player is already reusable for real MP3s: its orange playhead follows `audio.currentTime / audio.duration`. The generated piano-roll notes are determined by the track slug, not transcribed from the recording; they are **not** an analysis of its actual melody. Lyrics currently scroll manually in a compact panel at the bottom right. Accurate line-by-line auto-follow needs real timestamps; no timing was invented for this prototype.
+
 ## Contact form
 
 - Submissions go to the Formspree form `moedjgda` through `@formspree/ajax` (`src/contact.js`). The form id is public by design; no credentials, tokens or receiving address are in this repository.
