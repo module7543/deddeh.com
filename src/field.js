@@ -3,7 +3,7 @@
 // code, a postcard. The floor's light takes the section's colour.
 import {
   BoxGeometry, BufferAttribute, Color, Group, InstancedMesh, LinearSRGBColorSpace, Matrix4, Mesh,
-  MeshBasicMaterial, OrthographicCamera, PlaneGeometry, Scene, ShaderMaterial, Vector3, WebGLRenderer,
+  MeshBasicMaterial, OrthographicCamera, PlaneGeometry, Scene, ShaderMaterial, Vector2, Vector3, WebGLRenderer,
 } from 'three';
 import { gsap } from 'gsap';
 
@@ -158,7 +158,9 @@ const TINT = { blank: raw(0x8a6a4c), name: raw(0x8a6a4c), bits: raw(0x8a6a4c), w
 const FLOOR_VERTEX = `varying vec2 vP; void main() { vP = position.xy; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.); }`;
 const FLOOR_FRAGMENT = `
 precision highp float;
-uniform vec3 uBg, uTint, uPointer;
+uniform vec3 uBg, uTint, uPointer, uPaperCol;
+uniform vec2 uHalf;
+uniform float uPaper;
 varying vec2 vP;
 float rule(float v, float cell) {
   float d = abs(fract(v / cell + .5) - .5) * cell;
@@ -174,8 +176,13 @@ void main() {
   vec3 col = uBg * (.7 + .3 * reach);
   col += uTint * (.1 * pool + .045 * spot);
   col += mix(vec3(.93, .9, .85), uTint, .45) * grid * (.008 + .085 * reach + .14 * spot);
+  // The proof: the sheet's own rectangle turns to paper and grows until it is the page.
+  vec2 e = abs(vP) - uHalf;
+  float inside = 1. - smoothstep(0., max(fwidth(vP.x), fwidth(vP.y)) * 1.5, max(e.x, e.y));
+  col = mix(col, uPaperCol, inside * uPaper);
   gl_FragColor = vec4(col, 1.);
 }`;
+const PAPER = 0xece6d8, SHADOW = 0x0b0a09, PAPER_SHADOW = 0xcfc7b5;
 const ease = (t) => (t < .5 ? 4 * t * t * t : 1 - ((-2 * t + 2) ** 3) / 2);
 
 export class Field {
@@ -204,9 +211,9 @@ export class Field {
     this.mesh.frustumCulled = false;
     this.floor = new Mesh(new PlaneGeometry(8000, 8000), new ShaderMaterial({
       vertexShader: FLOOR_VERTEX, fragmentShader: FLOOR_FRAGMENT,
-      uniforms: { uBg: { value: raw(0x141311) }, uTint: { value: TINT.blank.clone() }, uPointer: { value: new Vector3() } },
+      uniforms: { uBg: { value: raw(0x141311) }, uTint: { value: TINT.blank.clone() }, uPointer: { value: new Vector3() }, uPaperCol: { value: raw(PAPER) }, uHalf: { value: new Vector2(W / 2 + 5, (ROWS * PITCH) / 2 + 5) }, uPaper: { value: 0 } },
     }));
-    this.shadows = new InstancedMesh(new PlaneGeometry(1, 1), new MeshBasicMaterial({ color: 0x0b0a09 }), N);
+    this.shadows = new InstancedMesh(new PlaneGeometry(1, 1), new MeshBasicMaterial({ color: SHADOW }), N);
     this.shadows.frustumCulled = false;
     this.shadows.position.z = .04;
     this.group.add(this.floor, this.shadows, this.mesh);
@@ -309,13 +316,36 @@ export class Field {
     this.select('card', duration ?? (this.name === 'card' ? .5 : 1.15));
   }
 
+  // Pull a proof: the blocks lie flat as the lines of a page (bars, as for card()), and the sheet
+  // beneath them turns to paper and grows to fill the window. Then the page itself takes over.
+  proof(element, bars, done) {
+    this.card(element, bars, null, .8);
+    const u = this.floor.material.uniforms, unit = 1 / this.group.scale.x, to = TINT.writing, shadow = new Color(PAPER_SHADOW);
+    gsap.to(u.uTint.value, { r: to.r, g: to.g, b: to.b, duration: .4, overwrite: true });
+    gsap.to(this.flat, { v: 1, duration: .7, ease: 'power3.inOut', overwrite: true });
+    gsap.to(this.group.rotation, { z: 0, duration: .7, ease: 'power3.inOut', overwrite: true });
+    this.paper?.kill();
+    u.uHalf.value.set(W / 2 + 5, (ROWS * PITCH) / 2 + 5);
+    this.paper = gsap.timeline({ onComplete: done })
+      .to(u.uPaper, { value: 1, duration: .25, ease: 'power1.out' }, .04)
+      .to(this.shadows.material.color, { r: shadow.r, g: shadow.g, b: shadow.b, duration: .3 }, .04)
+      .to(u.uHalf.value, { x: window.innerWidth * unit * .62, y: window.innerHeight * unit * .62, duration: .68, ease: 'power2.inOut' }, .08);
+  }
+  // Back from the page (the browser restored this one): the floor is dark again.
+  unproof() {
+    this.paper?.kill(); this.paper = null;
+    this.floor.material.uniforms.uPaper.value = 0;
+    this.shadows.material.color.setHex(SHADOW);
+    this.dirty = true;
+  }
+
   setReducedMotion(reduced) { this.reduced = reduced; this.dirty = true; }
   refresh() { this.dirty = true; }
 
   frame(delta) {
     if (!this.visible) return;
     const p = this.pointer;
-    const moving = this.progress.t < 1 || p.power > .002 || gsap.isTweening(this.group.rotation) || gsap.isTweening(this.floor.material.uniforms.uTint.value) || gsap.isTweening(this.flat);
+    const moving = this.progress.t < 1 || p.power > .002 || gsap.isTweening(this.group.rotation) || gsap.isTweening(this.floor.material.uniforms.uTint.value) || gsap.isTweening(this.flat) || Boolean(this.paper?.isActive());
     if (this.reduced && !moving && !this.dirty) return;
     this.dirty = false;
     this.time += delta / 1000;

@@ -5,6 +5,7 @@ import '@fontsource/ibm-plex-mono/latin-500.css';
 import './style.css';
 import { gsap } from 'gsap';
 import { createContact } from './contact.js';
+import { createProof } from './proof.js';
 
 const SECTIONS = {
   writing: { accent: 'var(--blue)', statement: 'Essays, observations, and notes on markets and long-term decisions.', no: 'Fig. 1', figure: 'The sheet, set as prose with marginalia.' },
@@ -32,6 +33,9 @@ const slot = document.querySelector('.sheet-slot');
 const again = document.querySelector('.lede-actions');
 const reading = document.querySelector('.reading');
 const contactItem = items.find((item) => item.dataset.section === 'contact');
+const writingItem = items.find((item) => item.dataset.section === 'writing');
+const essays = document.querySelector('.essays');
+const essayLinks = [...essays.querySelectorAll('.essay-link')];
 const motion = window.matchMedia('(prefers-reduced-motion: reduce)');
 const phone = window.matchMedia('(max-width: 820px)');
 let reduced = motion.matches;
@@ -81,6 +85,7 @@ function sync() {
   reading.hidden = state !== IDLE;
   reading.setAttribute('aria-pressed', String(IDLE === NUMBER));
   index.classList.toggle('is-idle', state === IDLE);
+  index.classList.toggle('is-listing', pinned === writingItem && next === writingItem);
   if (next === active) { show(state); if (!open) field?.select(rest()); return; }
   active = next;
   toc.classList.toggle('has-active', Boolean(active));
@@ -112,12 +117,59 @@ function setForm(open, options) {
   fitWidths();
 }
 
+// Pinning Writing opens the index beneath it: the essays. Hover only previews the section, as before.
+let listed = false, unfold = null;
+function listEssays(open, { keyboard = false, focus = true } = {}) {
+  if (open !== listed) {
+    listed = open;
+    writingItem.setAttribute('aria-expanded', String(open));
+    unfold?.kill();
+    if (reduced) { essays.hidden = !open; gsap.set(essays, { clearProps: 'height,opacity' }); }
+    else if (open) {
+      essays.hidden = false;
+      unfold = gsap.fromTo(essays, { height: 0, opacity: 0 }, { height: 'auto', opacity: 1, duration: .55, ease: 'power3.out', onComplete: () => gsap.set(essays, { clearProps: 'height' }) });
+    } else unfold = gsap.to(essays, { height: 0, opacity: 0, duration: .3, ease: 'power2.inOut', onComplete: () => { essays.hidden = true; } });
+    if (open) proof.prepare(essayLinks[0]);
+  }
+  if (open && keyboard && focus) essayLinks[0]?.focus({ preventScroll: true });
+}
+
+// Opening an essay pulls a proof of it: the blocks lie flat exactly where the page's words will be,
+// the sheet under them turns to paper and grows to fill the window, and the page takes over from there.
+let leaving = false;
+function openEssay(event, link) {
+  if (reduced || event.defaultPrevented || event.button || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+  event.preventDefault();
+  if (leaving) return;
+  leaving = true;
+  root.classList.add('is-proofing');
+  const bars = field ? proof.measure(link) : null;
+  const go = () => {
+    try { if (bars) sessionStorage.setItem('deddeh:proof', JSON.stringify({ at: Date.now(), w: window.innerWidth, h: window.innerHeight, bars: bars.page })); } catch { /* storage unavailable */ }
+    location.assign(link.href);
+  };
+  if (bars) field.proof(proof.frame, bars.field, go); else setTimeout(go, 360);
+}
+essayLinks.forEach((link) => {
+  link.addEventListener('click', (event) => openEssay(event, link));
+  for (const type of ['pointerenter', 'pointerdown', 'focus']) link.addEventListener(type, () => proof.prepare(link));
+});
+// The browser's Back button can restore this page as it was left, mid-proof.
+window.addEventListener('pageshow', (event) => {
+  if (!event.persisted || !leaving) return;
+  leaving = false;
+  root.classList.remove('is-proofing');
+  field?.unproof();
+  field?.select(rest());
+});
+
 // Pinning Contact opens the postcard; pinning anything else, or nothing, closes it.
 function pin(item, { writeURL = true, keyboard = false, focus = true } = {}) {
   pinned = item;
   if (item !== contactItem) posted = null;
   for (const other of items) other.setAttribute('aria-pressed', String(other === pinned));
   setForm(item === contactItem && !posted, { keyboard, focus });
+  listEssays(item === writingItem, { keyboard, focus });
   if (writeURL) {
     try { history.replaceState(null, '', pinned ? `#${pinned.dataset.section}` : location.pathname + location.search); } catch { /* restricted history */ }
   }
@@ -159,11 +211,21 @@ function leaveContact() {
 }
 document.addEventListener('keydown', (event) => {
   if (event.key !== 'Escape' || !pinned) return;
-  if (contact.isOpen) leaveContact(); else { hovered = null; pin(null); }
+  if (contact.isOpen) leaveContact();
+  else {
+    const inIndex = essays.contains(document.activeElement);
+    hovered = null;
+    pin(null);
+    if (inIndex) writingItem.focus({ preventScroll: true });
+  }
 });
 reading.addEventListener('click', () => read(IDLE === NAME));
 // The sheet itself answers a click or tap the same way; the button above is the keyboard's route.
-slot.addEventListener('click', () => { if (!active && !contact.isOpen) read(IDLE === NAME); });
+// With Writing chosen, the sheet is set as prose, and a click on it opens the newest essay.
+slot.addEventListener('click', () => {
+  if (!active && !contact.isOpen) read(IDLE === NAME);
+  else if (pinned === writingItem && active === writingItem) essayLinks[0]?.click();
+});
 again.querySelector('.again').addEventListener('click', () => { posted = null; pin(contactItem, { keyboard: true }); });
 window.addEventListener('hashchange', restore);
 window.addEventListener('resize', fitWidths);
@@ -174,6 +236,7 @@ motion.addEventListener('change', (event) => {
   field?.setReducedMotion(reduced);
 });
 
+const proof = createProof({ isReduced: () => reduced, hasField: () => Boolean(field) });
 const contact = createContact({
   card: document.querySelector('#contact-card'),
   isReduced: () => reduced,
@@ -192,6 +255,7 @@ const contact = createContact({
 
 fitWidths();
 restore();
+swap?.progress(1); // opened on a section's address: its statement is set before the page's entrance, not swapped in during it
 document.fonts?.ready.then(fitWidths);
 // The display face can finish loading after `ready` has resolved; measure again whenever a face arrives.
 document.fonts?.addEventListener?.('loadingdone', fitWidths);
@@ -208,6 +272,7 @@ const stage = document.querySelector('.stage');
 import('./field.js').then(({ Field }) => {
   field = new Field(stage, slot, reduced);
   document.documentElement.classList.add('has-field');
+  if (listed) proof.prepare(essayLinks[0]);
   // The sheet opens ruled and empty, as it always has, and is then signed.
   if (contact.isOpen) contact.draw(); else field.select(rest(), active ? 1.15 : 2.1, active || reduced ? 0 : .7);
 }).catch(() => stage.classList.add('is-fallback'));
