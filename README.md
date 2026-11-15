@@ -25,14 +25,23 @@ npm run build    # static build in dist/
 - **Motion.** GSAP drives the staggered re-typesetting, the width changes and the text swaps. With reduced motion every change is immediate and the scene renders only on change.
 - **Input.** Hover or keyboard focus previews a section; click, tap, Enter or Space pins it (`#writing`, `#projects`, `#contact`); Escape or a second press clears it. Up/Down, Home and End move through the index.
 - **Without WebGL** the page is complete; a ruled CSS ground replaces the canvas.
-- **Contact** is a section of the index only. There is no form, address or external service yet.
+- **Contact** opens a postcard you can write on. Hovering Contact only previews it; click, tap, Enter or Space opens the form, and Close, Escape or choosing another section leaves it (what was typed is kept). The blocks lie flat behind the form and become its frame, ruled lines, field underlines, stamp and postmark; the focused field's rule turns orange, an invalid one coral.
+
+## Contact form
+
+- Submissions go to the Formspree form `moedjgda` through `@formspree/ajax` (`src/contact.js`). The form id is public by design; no credentials, tokens or receiving address are in this repository.
+- Fields: Name (optional), Email, Message, plus Formspree's hidden `_gotcha` honeypot. The page validates before sending, sends once however often Send is pressed, and shows "Posted" only after Formspree answers with success.
+- If a send fails, the message stays in place with "Try again", and a link sends the same form through Formspree's own page in a new tab (where Formspree can show its own checks).
+- Tests and the post-deploy browser check always mock Formspree. Nothing in CI spends a real submission.
+- To check a branch build locally: `npm run build && npm run preview`, then `PREVIEW_URL=http://localhost:4173/ npm run verify:pages` (set `CHROMIUM_PATH` if Playwright's own browser is not installed).
 
 ## Source
 
 - `index.html` — markup and copy.
 - `src/style.css` — palette, type, layout.
 - `src/main.js` — section state, width fitting, GSAP choreography.
-- `src/field.js` — the floor, the block sheet and its shadows.
+- `src/field.js` — the floor, the block sheet and its shadows, and the flat postcard mode.
+- `src/contact.js` — the Contact postcard: validation, Formspree submission, and the blocks drawn behind the form.
 - `tests/`, `scripts/verify-pages.mjs` — interaction tests and the post-deploy browser check.
 
 Third-party notices: [docs/THIRD-PARTY-NOTICES.md](docs/THIRD-PARTY-NOTICES.md).

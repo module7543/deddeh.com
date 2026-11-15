@@ -4,12 +4,15 @@ import '@fontsource/ibm-plex-mono/latin-400.css';
 import '@fontsource/ibm-plex-mono/latin-500.css';
 import './style.css';
 import { gsap } from 'gsap';
+import { createContact } from './contact.js';
 
 const SECTIONS = {
   writing: { accent: 'var(--blue)', statement: 'Essays, observations, and notes on markets and long-term decisions.', no: 'Fig. 1', figure: 'The sheet, set as prose with marginalia.' },
   projects: { accent: 'var(--green)', statement: 'Software, research, and other experiments.', no: 'Fig. 2', figure: 'The sheet, set as code.' },
-  contact: { accent: 'var(--orange)', statement: 'For correspondence. Details to follow.', no: 'Fig. 3', figure: 'The sheet, set as a postcard.' },
+  contact: { accent: 'var(--orange)', statement: 'For correspondence. Select Contact to write a few lines.', no: 'Fig. 3', figure: 'The sheet, set as a postcard.' },
 };
+const WRITING_CARD = { accent: 'var(--orange)', statement: 'A few lines, and they come straight to me.', no: 'Fig. 3', figure: 'The postcard, laid flat to write on.' };
+let posted = null; // set once Formspree has acknowledged a message
 const IDLE = { accent: 'var(--orange)', statement: 'A personal site for essays, software, and whatever else holds my attention.', no: 'Fig. 0', figure: 'A ruled sheet. Move across it.' };
 
 const root = document.documentElement;
@@ -20,14 +23,22 @@ const statement = document.querySelector('.statement');
 const figureNo = document.querySelector('.figure-no');
 const figureText = document.querySelector('.figure-text');
 const marks = [...document.querySelectorAll('.marks span')];
+const index = document.querySelector('#index');
+const slot = document.querySelector('.sheet-slot');
+const again = document.querySelector('.lede-actions');
+const contactItem = items.find((item) => item.dataset.section === 'contact');
 const motion = window.matchMedia('(prefers-reduced-motion: reduce)');
+const phone = window.matchMedia('(max-width: 820px)');
 let reduced = motion.matches;
 let pinned = null, hovered = null, focused = null, active = null;
 let field = null, swap = null, shown = IDLE;
 
 // The active word opens along the width axis as far as its line allows.
 function fitWidths() {
-  const room = Math.min(window.innerWidth - toc.getBoundingClientRect().left * 2, window.innerWidth * (window.innerWidth <= 820 ? 1 : .52));
+  // Measured from the laid-out page, not window.innerWidth, which a phone can report before its viewport settles.
+  const narrow = phone.matches, page = document.documentElement.clientWidth, left = toc.getBoundingClientRect().left;
+  // With the postcard open, the active word stops short of it.
+  const room = narrow ? toc.clientWidth : contact?.isOpen ? slot.getBoundingClientRect().left - left - 24 : Math.min(page - left * 2, page * .52);
   for (const item of items) {
     const word = item.querySelector('.word');
     const space = room - (word.getBoundingClientRect().left - toc.getBoundingClientRect().left);
@@ -38,7 +49,7 @@ function fitWidths() {
     for (let i = 0; i < 8; i++) { const mid = (low + high) / 2; if (width(mid) > space) high = mid; else low = mid; }
     item.dataset.open = low.toFixed(1);
   }
-  for (const item of items) gsap.set(item, { '--w': item === active ? Number(item.dataset.open) : 62 });
+  for (const item of items) gsap.to(item, { '--w': item === active ? Number(item.dataset.open) : 62, duration: reduced ? 0 : .5, ease: 'power3.out', overwrite: true });
 }
 
 function show(state) {
@@ -56,8 +67,12 @@ function show(state) {
 }
 
 function sync() {
-  const next = hovered ?? focused ?? pinned;
-  if (next === active) return;
+  // While the postcard is open nothing but a deliberate choice changes the section.
+  const open = Boolean(contact?.isOpen);
+  const next = open ? pinned : hovered ?? focused ?? pinned;
+  const state = !next ? IDLE : next === contactItem && open ? WRITING_CARD : next === contactItem && posted ? posted : SECTIONS[next.dataset.section];
+  again.hidden = state !== posted;
+  if (next === active) { show(state); if (!open) field?.select(active?.dataset.section ?? 'blank'); return; }
   active = next;
   toc.classList.toggle('has-active', Boolean(active));
   for (const item of items) {
@@ -66,26 +81,38 @@ function sync() {
     gsap.to(item, { '--w': on ? Number(item.dataset.open ?? 125) : 62, duration: reduced ? 0 : on ? .7 : .45, ease: on ? 'power4.out' : 'power2.inOut', overwrite: true });
   }
   for (const mark of marks) mark.classList.toggle('is-on', mark.dataset.mark === active?.dataset.section);
-  show(active ? SECTIONS[active.dataset.section] : IDLE);
-  field?.select(active?.dataset.section ?? 'blank');
+  show(state);
+  if (!open) field?.select(active?.dataset.section ?? 'blank');
 }
 
-function pin(item, { writeURL = true } = {}) {
+function setForm(open, options) {
+  if (open === contact.isOpen) return;
+  if (open) posted = null;
+  index.classList.toggle('form-open', open);
+  contactItem.setAttribute('aria-expanded', String(open));
+  if (open) contact.open(options); else contact.close();
+  fitWidths();
+}
+
+// Pinning Contact opens the postcard; pinning anything else, or nothing, closes it.
+function pin(item, { writeURL = true, keyboard = false, focus = true } = {}) {
   pinned = item;
+  if (item !== contactItem) posted = null;
   for (const other of items) other.setAttribute('aria-pressed', String(other === pinned));
+  setForm(item === contactItem && !posted, { keyboard, focus });
   if (writeURL) {
     try { history.replaceState(null, '', pinned ? `#${pinned.dataset.section}` : location.pathname + location.search); } catch { /* restricted history */ }
   }
   sync();
 }
 function restore() {
-  pin(items.find((item) => item.dataset.section === location.hash.slice(1)) ?? null, { writeURL: false });
+  pin(items.find((item) => item.dataset.section === location.hash.slice(1)) ?? null, { writeURL: false, focus: false });
 }
 
 items.forEach((item, index) => {
   item.addEventListener('click', (event) => {
     if (event.detail === 0) hovered = null; // keyboard activation outranks a resting mouse
-    if (pinned === item) { hovered = null; pin(null); } else pin(item);
+    if (pinned === item) { hovered = null; pin(null); } else pin(item, { keyboard: event.detail === 0 });
   });
   item.addEventListener('pointerenter', (event) => { if (event.pointerType === 'mouse') { hovered = item; sync(); } });
   item.addEventListener('pointerleave', (event) => { if (event.pointerType === 'mouse') { hovered = null; sync(); } });
@@ -106,18 +133,46 @@ toc.addEventListener('focusin', (event) => {
   sync();
 });
 toc.addEventListener('focusout', () => { focused = null; queueMicrotask(sync); });
-document.addEventListener('keydown', (event) => { if (event.key === 'Escape' && pinned) { hovered = null; pin(null); } });
+function leaveContact() {
+  hovered = null;
+  pin(null);
+  contactItem.focus({ preventScroll: true });
+}
+document.addEventListener('keydown', (event) => {
+  if (event.key !== 'Escape' || !pinned) return;
+  if (contact.isOpen) leaveContact(); else { hovered = null; pin(null); }
+});
+again.querySelector('.again').addEventListener('click', () => { posted = null; pin(contactItem, { keyboard: true }); });
 window.addEventListener('hashchange', restore);
 window.addEventListener('resize', fitWidths);
+if (typeof ResizeObserver !== 'undefined') new ResizeObserver(fitWidths).observe(toc);
 motion.addEventListener('change', (event) => {
   reduced = event.matches;
   swap?.progress(1);
   field?.setReducedMotion(reduced);
 });
 
+const contact = createContact({
+  card: document.querySelector('#contact-card'),
+  isReduced: () => reduced,
+  getField: () => field,
+  onCloseRequest: leaveContact,
+  onPosted: () => {
+    const day = new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'short' });
+    posted = { accent: 'var(--orange)', statement: 'Posted. Thank you.', no: 'Fig. 3', figure: `The postcard, on its way. ${day}.` };
+    setForm(false);
+    sync();
+    contactItem.focus({ preventScroll: true });
+    if (!reduced) gsap.fromTo('.lede-bar', { scaleX: 1 }, { scaleX: 3.2, transformOrigin: 'left center', duration: .35, ease: 'power3.out', yoyo: true, repeat: 1 });
+    window.scrollTo({ top: 0, behavior: reduced ? 'instant' : 'smooth' });
+  },
+});
+
 fitWidths();
 restore();
 document.fonts?.ready.then(fitWidths);
+// The display face can finish loading after `ready` has resolved; measure again whenever a face arrives.
+document.fonts?.addEventListener?.('loadingdone', fitWidths);
 if (!reduced) {
   gsap.timeline({ defaults: { ease: 'power4.out' } })
     .from('.word-text', { yPercent: 105, duration: .95, stagger: .09 })
@@ -129,7 +184,8 @@ if (!reduced) {
 // The page is complete without graphics; the floor and sheet are added when WebGL is there.
 const stage = document.querySelector('.stage');
 import('./field.js').then(({ Field }) => {
-  field = new Field(stage, document.querySelector('.sheet-slot'), reduced);
-  field.select(active?.dataset.section ?? 'blank');
+  field = new Field(stage, slot, reduced);
+  document.documentElement.classList.add('has-field');
+  if (contact.isOpen) contact.draw(); else field.select(active?.dataset.section ?? 'blank');
 }).catch(() => stage.classList.add('is-fallback'));
 window.addEventListener('pagehide', (event) => { if (!event.persisted) field?.dispose(); });
