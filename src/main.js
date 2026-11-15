@@ -12,6 +12,11 @@ const SECTIONS = {
   projects: { accent: 'var(--green)', statement: 'Software, research, and other experiments.', no: 'Fig. 2', figure: 'The sheet, set as code.' },
   contact: { accent: 'var(--orange)', statement: 'For correspondence. Select Contact to write a few lines.', no: 'Fig. 3', figure: 'The sheet, set as a postcard.' },
 };
+// Projects holds collections. With Projects chosen, each one previews its own setting of the sheet.
+const COLLECTIONS = {
+  apps: { accent: 'var(--green)', statement: 'Software I build for my own use. A few pieces are open to try; most are private.', no: 'Fig. 2a', figure: 'The sheet, set as a window.' },
+  music: { accent: 'var(--violet)', statement: 'Songs I make with Suno, to listen to here.', no: 'Fig. 2b', figure: 'The sheet, set as a score.' },
+};
 const WRITING_CARD = { accent: 'var(--orange)', statement: 'A few lines, and they come straight to me.', no: 'Fig. 3', figure: 'The postcard, laid flat to write on.' };
 let posted = null; // set once Formspree has acknowledged a message
 // At rest the sheet carries the name, and the name reads two ways: as a word, and as the number it spells in hexadecimal.
@@ -34,14 +39,19 @@ const again = document.querySelector('.lede-actions');
 const reading = document.querySelector('.reading');
 const contactItem = items.find((item) => item.dataset.section === 'contact');
 const writingItem = items.find((item) => item.dataset.section === 'writing');
-const essays = document.querySelector('.essays');
+const projectsItem = items.find((item) => item.dataset.section === 'projects');
+const collections = document.querySelector('#collections');
+const collectionLinks = [...collections.querySelectorAll('.collection-link')];
+const essays = document.querySelector('#essays');
 const essayLinks = [...essays.querySelectorAll('.essay-link')];
 const motion = window.matchMedia('(prefers-reduced-motion: reduce)');
 const phone = window.matchMedia('(max-width: 820px)');
 let reduced = motion.matches;
 let pinned = null, hovered = null, focused = null, active = null;
 let field = null, swap = null, shown = IDLE;
-const rest = () => active?.dataset.section ?? IDLE.formation;
+let peek = null; // the collection under the pointer or the keyboard, while Projects is chosen
+const peeking = () => (peek && pinned === projectsItem && active === projectsItem ? peek : null);
+const rest = () => peeking() ?? active?.dataset.section ?? IDLE.formation;
 
 // The active word opens along the width axis as far as its line allows.
 function fitWidths() {
@@ -80,7 +90,8 @@ function sync() {
   // While the postcard is open nothing but a deliberate choice changes the section.
   const open = Boolean(contact?.isOpen);
   const next = open ? pinned : hovered ?? focused ?? pinned;
-  const state = !next ? IDLE : next === contactItem && open ? WRITING_CARD : next === contactItem && posted ? posted : SECTIONS[next.dataset.section];
+  const looking = peek && pinned === projectsItem && next === projectsItem;
+  const state = !next ? IDLE : looking ? COLLECTIONS[peek] : next === contactItem && open ? WRITING_CARD : next === contactItem && posted ? posted : SECTIONS[next.dataset.section];
   again.hidden = state !== posted;
   reading.hidden = state !== IDLE;
   reading.setAttribute('aria-pressed', String(IDLE === NUMBER));
@@ -134,6 +145,49 @@ function listEssays(open, { keyboard = false, focus = true } = {}) {
   if (open && keyboard && focus) essayLinks[0]?.focus({ preventScroll: true });
 }
 
+// Pinning Projects opens its collections the same way. Hover or focus on one sets the sheet as that collection;
+// choosing it lets the sheet finish, clears the index, and opens the collection's own page with the sheet still set.
+let shelved = false, unshelf = null, entering = false;
+function listCollections(open, { keyboard = false, focus = true } = {}) {
+  if (open !== shelved) {
+    shelved = open;
+    if (!open) peek = null;
+    projectsItem.setAttribute('aria-expanded', String(open));
+    unshelf?.kill();
+    if (reduced) { collections.hidden = !open; gsap.set(collections, { clearProps: 'height,opacity' }); }
+    else if (open) {
+      collections.hidden = false;
+      unshelf = gsap.fromTo(collections, { height: 0, opacity: 0 }, { height: 'auto', opacity: 1, duration: .55, ease: 'power3.out', onComplete: () => gsap.set(collections, { clearProps: 'height' }) });
+    } else unshelf = gsap.to(collections, { height: 0, opacity: 0, duration: .3, ease: 'power2.inOut', onComplete: () => { collections.hidden = true; } });
+  }
+  if (open && keyboard && focus) collectionLinks[0]?.focus({ preventScroll: true });
+}
+collectionLinks.forEach((link) => {
+  const look = (on) => { if (entering) return; peek = on ? link.dataset.collection : peek === link.dataset.collection ? null : peek; sync(); };
+  // A real movement, not the rows unfolding under a pointer that is standing still.
+  link.addEventListener('pointermove', (event) => { if (event.pointerType === 'mouse' && peek !== link.dataset.collection) look(true); });
+  link.addEventListener('pointerleave', (event) => { if (event.pointerType === 'mouse') look(false); });
+  link.addEventListener('focus', () => look(true));
+  link.addEventListener('blur', () => look(false));
+  link.addEventListener('click', (event) => {
+    if (reduced || event.defaultPrevented || event.button || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+    event.preventDefault();
+    if (entering) return;
+    const seen = peek === link.dataset.collection && field?.name === peek; // already set by hover or focus
+    peek = link.dataset.collection;
+    sync();
+    entering = true;
+    root.classList.add('is-entering');
+    setTimeout(() => location.assign(link.href), seen || !field ? 300 : 620);
+  });
+});
+window.addEventListener('pageshow', (event) => {
+  if (!event.persisted || !entering) return;
+  entering = false; peek = null;
+  root.classList.remove('is-entering');
+  sync();
+});
+
 // Opening an essay pulls a proof of it: the blocks lie flat exactly where the page's words will be,
 // the sheet under them turns to paper and grows to fill the window, and the page takes over from there.
 let leaving = false;
@@ -170,6 +224,7 @@ function pin(item, { writeURL = true, keyboard = false, focus = true } = {}) {
   for (const other of items) other.setAttribute('aria-pressed', String(other === pinned));
   setForm(item === contactItem && !posted, { keyboard, focus });
   listEssays(item === writingItem, { keyboard, focus });
+  listCollections(item === projectsItem, { keyboard, focus });
   if (writeURL) {
     try { history.replaceState(null, '', pinned ? `#${pinned.dataset.section}` : location.pathname + location.search); } catch { /* restricted history */ }
   }
@@ -213,10 +268,11 @@ document.addEventListener('keydown', (event) => {
   if (event.key !== 'Escape' || !pinned) return;
   if (contact.isOpen) leaveContact();
   else {
-    const inIndex = essays.contains(document.activeElement);
+    const inIndex = essays.contains(document.activeElement), inShelf = collections.contains(document.activeElement);
     hovered = null;
     pin(null);
     if (inIndex) writingItem.focus({ preventScroll: true });
+    if (inShelf) projectsItem.focus({ preventScroll: true });
   }
 });
 reading.addEventListener('click', () => read(IDLE === NAME));

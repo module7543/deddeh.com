@@ -60,7 +60,7 @@ describe('The index, its statement and the figure caption', () => {
   it('leaves the sheet alone while a section is pinned', () => {
     item('projects').click();
     $('.sheet-slot').click();
-    expect($('.figure-no').textContent).toBe('Fig. 2');
+    expect($('.figure-no').textContent).toMatch(/^Fig\. 2a?$/); // Projects, or the collection the keyboard has landed on
     expect($('.reading').hidden).toBe(true);
     expect(location.hash).toBe('#projects');
   });
@@ -184,6 +184,101 @@ describe('The Writing index', () => {
     const words = page.querySelector('.prose').textContent.trim().split(/\s+/).length;
     expect(words).toBeGreaterThan(800);
     expect(words).toBeLessThan(1300);
+  });
+});
+
+describe('Projects and its collections', () => {
+  const shelf = () => $('#collections');
+  const link = (name) => $(`.collection-link[data-collection="${name}"]`);
+  const pages = ['projects/apps/index.html', 'projects/music/index.html', 'projects/apps/sample-app/index.html', 'projects/music/sample-track/index.html', 'projects/music/second-sample/index.html'];
+  const read = (path) => new DOMParser().parseFromString(readFileSync(path, 'utf8'), 'text/html');
+
+  it('stays closed on hover and opens under Projects once it is chosen', () => {
+    expect(shelf().hidden).toBe(true);
+    mouse(item('projects'), 'pointerenter');
+    expect(shelf().hidden).toBe(true);
+    expect($('.figure-no').textContent).toBe('Fig. 2');
+    mouse(item('projects'), 'pointerleave');
+    mouse(item('projects'), 'pointerenter');
+    item('projects').dispatchEvent(new MouseEvent('click', { bubbles: true, detail: 1 }));
+    expect(shelf().hidden).toBe(false);
+    expect(item('projects').getAttribute('aria-expanded')).toBe('true');
+    expect(item('projects').nextElementSibling).toBe(shelf()); // next in the tab order
+    expect($('.figure-no').textContent).toBe('Fig. 2');
+    expect($('#essays').hidden).toBe(true);
+    item('writing').click();
+    expect(shelf().hidden).toBe(true);
+    expect(item('projects').getAttribute('aria-expanded')).toBe('false');
+  });
+
+  it('lists Apps and Music as real links to pages that exist', () => {
+    const links = [...document.querySelectorAll('.collection-link')];
+    expect(links.map((a) => a.dataset.collection)).toEqual(['apps', 'music']);
+    for (const a of links) {
+      expect(a.getAttribute('href')).toBe(`./projects/${a.dataset.collection}/`);
+      const page = read(`projects/${a.dataset.collection}/index.html`);
+      expect(page.querySelector('#room').dataset.view).toBe('shelf');
+      expect(page.querySelector('.rooms .is-active .word-text').textContent).toBe(a.querySelector('.essay-title').textContent);
+      expect(page.querySelector('.return').getAttribute('href')).toBe('../../#projects');
+    }
+  });
+
+  it('sets the sheet and the statement as a collection while it is under the pointer or the keyboard', () => {
+    item('projects').dispatchEvent(new MouseEvent('click', { bubbles: true, detail: 1 }));
+    mouse(link('music'), 'pointermove');
+    expect($('.figure-no').textContent).toBe('Fig. 2b');
+    expect($('.statement').textContent).toContain('Suno');
+    mouse(link('music'), 'pointerleave');
+    expect($('.figure-no').textContent).toBe('Fig. 2');
+    link('apps').focus();
+    expect($('.figure-no').textContent).toBe('Fig. 2a');
+    expect($('.statement').textContent).toContain('Software');
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
+    expect(shelf().hidden).toBe(true);
+    expect(document.activeElement).toBe(item('projects'));
+  });
+
+  it('follows a collection link directly when motion is reduced, and leaves modified clicks alone', () => {
+    item('projects').click();
+    link('apps').addEventListener('click', (event) => event.preventDefault(), { once: true }); // jsdom cannot navigate
+    link('apps').dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true }));
+    expect(document.documentElement.classList.contains('is-entering')).toBe(false);
+    window.setTestReducedMotion(false);
+    document.addEventListener('click', (event) => event.preventDefault(), { once: true });
+    link('apps').dispatchEvent(new MouseEvent('click', { bubbles: true, cancelable: true, metaKey: true }));
+    expect(document.documentElement.classList.contains('is-entering')).toBe(false);
+    window.setTestReducedMotion(true);
+  });
+
+  it('gives every page of the room its own complete document, and a way back up', () => {
+    for (const path of pages) {
+      const page = read(path), room = page.querySelector('#room');
+      expect(['shelf', 'app', 'track']).toContain(room.dataset.view);
+      expect(['apps', 'music']).toContain(room.dataset.tone);
+      expect(page.querySelectorAll('h1')).toHaveLength(1);
+      expect(page.querySelector('.identity').getAttribute('href')).toMatch(/^(\.\.\/)+$/);
+      expect(page.querySelector('.return').getAttribute('href')).toMatch(room.dataset.view === 'shelf' ? /#projects$/ : /^\.\.\/$/);
+      for (const a of page.querySelectorAll('#room a[data-room]')) { // links inside the room lead to pages that exist
+        const target = new URL(a.getAttribute('href'), `http://x/${path}`).pathname.slice(1);
+        expect(() => readFileSync(`${target}index.html`, 'utf8')).not.toThrow();
+      }
+    }
+  });
+
+  it('keeps the samples marked as placeholders, with nothing public implied and no recording attached', () => {
+    const app = read('projects/apps/sample-app/index.html');
+    expect(app.querySelector('.slug').textContent).toMatch(/Placeholder.*Not a real application/);
+    expect(app.querySelector('.access-state').textContent).toBe('Private');
+    expect(app.querySelectorAll('.shot img[alt]').length).toBe(app.querySelectorAll('.shot').length);
+    expect([...app.querySelectorAll('#room a')].map((a) => a.getAttribute('href'))).toEqual(['../../../#contact']); // no source, live or request link
+    expect(app.querySelectorAll('form, .open')).toHaveLength(0);
+    for (const slug of ['sample-track', 'second-sample']) {
+      const page = read(`projects/music/${slug}/index.html`), listen = page.querySelector('.listen');
+      expect(page.querySelector('.slug').textContent).toMatch(/Placeholder track.*Not a recording by Sam Deddeh/);
+      expect(listen.dataset.track).toBe(slug);
+      expect(listen.hasAttribute('data-src') || listen.hasAttribute('data-suno')).toBe(false);
+      expect(page.querySelectorAll('audio, iframe, [autoplay]')).toHaveLength(0);
+    }
   });
 });
 

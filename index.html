@@ -74,7 +74,16 @@
                 </ol>
               </div>
             </li>
-            <li><button type="button" class="toc-item" data-section="projects" aria-pressed="false"><span class="num" aria-hidden="true">02</span><span class="word"><span class="word-text">Projects</span></span></button></li>
+            <li>
+              <button type="button" class="toc-item" data-section="projects" aria-pressed="false" aria-expanded="false" aria-controls="collections"><span class="num" aria-hidden="true">02</span><span class="word"><span class="word-text">Projects</span></span></button>
+              <!-- The collections open under Projects. One entry per collection: add an <li> here and a folder under projects/. -->
+              <div class="essays collections" id="collections" hidden>
+                <ol>
+                  <li><a class="collection-link" href="./projects/apps/" data-collection="apps"><span class="essay-no" aria-hidden="true">2a</span><span class="essay-title">Apps</span><span class="essay-go" aria-hidden="true">→</span><span class="essay-meta">Software · one sample showcase</span></a></li>
+                  <li><a class="collection-link" href="./projects/music/" data-collection="music"><span class="essay-no" aria-hidden="true">2b</span><span class="essay-title">Music</span><span class="essay-go" aria-hidden="true">→</span><span class="essay-meta">Songs to listen to · two sample tracks</span></a></li>
+                </ol>
+              </div>
+            </li>
             <li><button type="button" class="toc-item" data-section="contact" aria-pressed="false" aria-expanded="false" aria-controls="contact-card"><span class="num" aria-hidden="true">03</span><span class="word"><span class="word-text">Contact</span></span></button></li>
           </ol>
           <span class="word-measure" aria-hidden="true"></span>
@@ -83,7 +92,7 @@
         <p class="figure"><span class="figure-caption" aria-hidden="true"><span class="figure-no">Fig. 0</span><span class="figure-text">The sheet, set as a name.</span></span><button type="button" class="reading" aria-pressed="false">Read it as a number</button></p>
       </main>
     </div>
-    <noscript><p class="noscript-note">JavaScript adds the interactive sheet. Writing: <a href="./writing/the-margin/">The Margin Is Part of the Page</a> (sample text).</p></noscript>
+    <noscript><p class="noscript-note">JavaScript adds the interactive sheet. Writing: <a href="./writing/the-margin/">The Margin Is Part of the Page</a> (sample text). Projects: <a href="./projects/apps/">Apps</a>, <a href="./projects/music/">Music</a>.</p></noscript>
     <script type="module" src="/src/main.js"></script>
   </body>
 </html>

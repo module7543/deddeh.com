@@ -1,0 +1,58 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#141311" />
+    <meta name="description" content="Apps: software by Sam Deddeh. A design prototype with placeholder content." />
+    <meta name="robots" content="noindex, nofollow" />
+    <title>Apps · Deddeh.com</title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  </head>
+  <body>
+    <a class="skip-link" href="#room">Skip to the page</a>
+    <div class="stage" aria-hidden="true"></div>
+    <div class="grain" aria-hidden="true"></div>
+    <div class="shell">
+      <header class="top">
+        <a class="identity" href="../../" aria-label="deddeh.com, home">deddeh.com<span class="caret" aria-hidden="true"></span></a>
+        <a class="return" href="../../#projects" data-leave><span aria-hidden="true">←</span> <b>Projects</b></a>
+        <p class="marks" aria-hidden="true"><span data-mark="writing"></span><span data-mark="projects" class="is-on"></span><span data-mark="contact"></span></p>
+      </header>
+
+      <main id="room" data-view="shelf" data-tone="apps" data-formation="apps" tabindex="-1">
+        <h1 class="sr-only">Apps, a collection in Projects</h1>
+
+        <div class="lede">
+          <span class="lede-bar" aria-hidden="true"></span>
+          <p class="statement">Software I build for my own use. A few pieces are open to try; most are private.</p>
+        </div>
+
+        <div class="sheet-slot" aria-hidden="true"></div>
+
+        <!-- The collections. To add one: a word here on every collection page, a folder under projects/, and a row on the homepage. -->
+        <nav class="toc rooms" aria-label="Collections">
+          <ol>
+            <li>
+              <a class="toc-item is-active" aria-current="page" href="./" data-room><span class="num" aria-hidden="true">2a</span><span class="word"><span class="word-text">Apps</span></span></a>
+              <!-- One row per application, newest first. -->
+              <div class="shelf">
+                <ol class="manifest">
+                  <li><a class="entry" href="./sample-app/" data-room><span class="entry-no" aria-hidden="true">A01</span><span class="entry-name">Sample App</span><span class="entry-tag">Private</span><span class="entry-go" aria-hidden="true">→</span><span class="entry-line">Placeholder showcase · three placeholder screens</span></a></li>
+                </ol>
+                <p class="shelf-note">One placeholder entry, set to test the design. Real applications will be listed here.</p>
+              </div>
+            </li>
+            <li>
+              <a class="toc-item" href="../music/" data-room><span class="num" aria-hidden="true">2b</span><span class="word"><span class="word-text">Music</span></span></a>
+            </li>
+          </ol>
+        </nav>
+
+        <p class="figure"><span class="figure-caption" aria-hidden="true"><span class="figure-no">Fig. 2a</span><span class="figure-text">The sheet, set as a window.</span></span></p>
+      </main>
+
+    </div>
+    <script type="module" src="/src/projects.js"></script>
+  </body>
+</html>

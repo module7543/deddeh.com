@@ -149,11 +149,61 @@ function bits() {
   return out;
 }
 
-const FORMATIONS = { blank: blank(), name: name(), bits: bits(), writing: writing(), projects: projects(), contact: contact() };
-const SPIN = { blank: -.4, name: -.4, bits: -.4, writing: -.34, projects: -.46, contact: -.3, card: 0 };
+// Projects holds two collections, and the sheet is set once more for each.
+// Apps: a window. A title bar, a sidebar, a heading, three tiles and a chart.
+function apps() {
+  const base = blank(), out = base.map((b, i) => hide(base, i));
+  let n = 0;
+  const put = (x, r, w, c, z = 0, h = BLOCK_H, dy = 0) => { out[n++] = { x: x + w / 2, y: rowY(r) + dy, w, h, z, c }; return x + w + 1.5; };
+  [C.orange, C.dim, C.dim].forEach((c, i) => put(LEFT + i * 4.1, 0, 2.6, c));
+  put(put(LEFT + 26, 0, 34, C.dim), 0, 11, C.dim); put(LEFT + 91, 0, 9, C.dim);
+  [14, 10, 16, 12, 9, 15, 11, 13, 8, 12].forEach((w, i) => put(LEFT, i + 2, w, i === 2 ? C.green : C.text, i === 2 ? .9 : 0));
+  put(LEFT, 13, 18, C.dim);
+  const x0 = LEFT + 26, end = put(put(x0, 2, 21, C.ink), 2, 12, C.ink);
+  [9, 14, 7, 11, 6].reduce((x, w) => put(x, 3, w, C.text), x0);
+  [C.green, C.teal, C.blue].forEach((c, i) => put(x0 + i * 25.5, 5, 23, c, i ? .5 : 1.4, PITCH + BLOCK_H, -PITCH / 2));
+  put(put(x0, 8, 12, C.text), 8, 6, C.text);
+  const floor = rowY(13) - BLOCK_H / 2;
+  [1.6, 2.4, 1.2, 3.1, 2.6, 3.7, 2.1, 3.3, 4.2].forEach((rows, i) => {
+    const h = rows * PITCH - (PITCH - BLOCK_H);
+    out[n++] = { x: x0 + i * 8.3 + 3, y: floor + h / 2, w: 6, h, z: i === 8 ? 1 : .3, c: i === 8 ? C.ink : C.green };
+  });
+  out[CURSOR] = { x: end + 1.3, y: rowY(2), w: 2.6, z: 1.8, c: C.orange };
+  return out;
+}
+
+// Music: a score, as a piano roll. Keys down the left edge, a melody above a slower line.
+// Each track is given its own (the seed), and the cursor is its playhead.
+export const SCORE_X = LEFT + 10, SCORE_W = W / 2 - SCORE_X;
+const KEYS = [1, 0, 1, 0, 1, 1, 0, 1, 0, 1, 0, 1, 1, 0];
+export function score(seed = 7) {
+  const base = blank(), out = base.map((b, i) => hide(base, i)), rand = rng(seed), notes = [];
+  let n = 0;
+  KEYS.forEach((white, r) => { out[n++] = { x: LEFT + (white ? 3 : 2), y: rowY(r), w: white ? 6 : 4, z: 0, c: white ? C.text : C.dim }; });
+  const voice = (low, high, short, long, rests, tone) => {
+    let x = SCORE_X, row = low + Math.floor(rand() * (high - low + 1));
+    while (x < W / 2 - 2 && n < CURSOR - 1) {
+      const w = Math.min(short + rand() * (long - short), W / 2 - x);
+      if (rand() < rests) { x += w * .6; continue; }
+      row = Math.min(Math.max(row + Math.round((rand() - .5) * (tone ? 5 : 3)), low), high);
+      const c = tone ? (rand() < .2 ? C.ink : C.violet) : C.text;
+      out[n++] = { x: x + w / 2, y: rowY(row), w, z: tone ? .9 : 0, c };
+      notes.push({ at: (x - SCORE_X) / SCORE_W, for: w / SCORE_W, row });
+      x += w + .9;
+    }
+  };
+  voice(1, 8, 2.6, 9, .13, true);
+  voice(10, 13, 9, 20, .06, false);
+  out[CURSOR] = { x: SCORE_X - 2.2, y: rowY(0), w: 2.6, z: 1.6, c: C.orange };
+  out.notes = notes;
+  return out;
+}
+
+const FORMATIONS = { blank: blank(), name: name(), bits: bits(), writing: writing(), projects: projects(), contact: contact(), apps: apps(), music: score() };
+const SPIN = { blank: -.4, name: -.4, bits: -.4, writing: -.34, projects: -.46, contact: -.3, card: 0, apps: -.46, music: -.36 };
 const PITCH_X = -.98; // how far the sheet leans back when it is not laid flat
 const raw = (hex) => new Color().setHex(hex, LinearSRGBColorSpace); // shader colours stay in display space
-const TINT = { blank: raw(0x8a6a4c), name: raw(0x8a6a4c), bits: raw(0x8a6a4c), writing: raw(C.blue), projects: raw(C.green), contact: raw(C.orange), card: raw(C.orange) };
+const TINT = { blank: raw(0x8a6a4c), name: raw(0x8a6a4c), bits: raw(0x8a6a4c), writing: raw(C.blue), projects: raw(C.green), contact: raw(C.orange), card: raw(C.orange), apps: raw(C.green), music: raw(C.violet) };
 
 const FLOOR_VERTEX = `varying vec2 vP; void main() { vP = position.xy; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.); }`;
 const FLOOR_FRAGMENT = `
@@ -237,7 +287,7 @@ export class Field {
     this.moveY = gsap.quickTo(this.pointer, 'y', { duration: .35, ease: 'power3.out' });
     this.matrix = new Matrix4(); this.color = new Color(); this.hi = new Color(C.ink);
     this.inverse = new Matrix4(); this.origin = new Vector3(); this.dir = new Vector3();
-    this.time = 0; this.visible = true; this.dirty = true;
+    this.time = 0; this.visible = true; this.dirty = true; this.head = null;
 
     this.onPointer = (event) => this.point(event.clientX, event.clientY, event.pointerType);
     this.onLeave = () => gsap.to(this.pointer, { power: 0, tiltX: 0, tiltY: 0, duration: .9, ease: 'power2.out' });
@@ -339,6 +389,30 @@ export class Field {
     this.dirty = true;
   }
 
+  // A formation of the caller's own (a track's score), turned and lit like an existing one.
+  define(name, formation, like) {
+    this.formations[name] = formation;
+    this.toColors[name] = formation.map((b) => new Color(b.c));
+    SPIN[name] = SPIN[like]; TINT[name] = TINT[like];
+  }
+  // The floor light, for a flat sheet that belongs to a section other than Contact.
+  light(name) {
+    const tint = this.floor.material.uniforms.uTint.value, to = TINT[name];
+    gsap.to(tint, { r: to.r, g: to.g, b: to.b, duration: this.reduced ? 0 : .8, ease: 'power2.out', overwrite: true });
+  }
+  // The room's pages replace one another without a reload; the sheet follows whichever slot is on the page.
+  setSlot(slot) {
+    this.observer.disconnect();
+    this.slot = slot;
+    this.observer.observe(slot);
+    this.resize();
+  }
+  // The playhead: a position along the score (0 to 1), or null for none. The cursor becomes a bar that crosses the sheet.
+  setHead(position) {
+    this.head = position === null ? null : SCORE_X + Math.min(Math.max(position, 0), 1) * SCORE_W;
+    this.dirty = true;
+  }
+
   setReducedMotion(reduced) { this.reduced = reduced; this.dirty = true; }
   refresh() { this.dirty = true; }
 
@@ -375,17 +449,25 @@ export class Field {
       const arc = Math.sin(k * Math.PI) * 2.2;
       let depth = BLOCK_Z + (near * 7 + wave) * (1 - flat * .7) + arc;
       this.color.copy(s.col).lerp(this.hi, near * .6);
+      let bx = s.x, by = s.y, bw = s.w, bh = s.h;
+      if (this.head !== null && k > .98) {
+        if (i === CURSOR) { bx = this.head; by = 0; bw = .9; bh = ROWS * PITCH + 4; depth = BLOCK_Z + 1.2; }
+        else if (s.x > SCORE_X - 1) { // the note under the playhead stands up
+          const lit = Math.min(Math.max(1.6 - (Math.abs(s.x - this.head) - s.w / 2), 0), 1);
+          depth += lit * 2.6; this.color.lerp(this.hi, lit * .55);
+        }
+      }
       if (i === CURSOR && !this.reduced) this.color.lerp(this.off, (Math.sin(this.time * 3.2) > .2 ? 0 : .75) * (this.name === 'name' || this.name === 'bits' ? 1 : 0));
-      const visible = s.w > .06;
+      const visible = bw > .06;
       if (!visible) depth = .001;
-      this.matrix.makeScale(Math.max(s.w, .001), visible ? s.h : .001, depth);
-      this.matrix.setPosition(s.x, s.y, s.z + depth / 2);
+      this.matrix.makeScale(Math.max(bw, .001), visible ? bh : .001, depth);
+      this.matrix.setPosition(bx, by, s.z + depth / 2);
       this.mesh.setMatrixAt(i, this.matrix);
       this.mesh.setColorAt(i, this.color);
       // The shadow runs from the block's footprint away from the light; taller and higher blocks cast further.
       const fall = visible ? (s.z + depth) * .62 : 0, lift = visible ? s.z * .62 : 0;
-      this.matrix.makeScale(visible ? s.w + fall - lift : .001, visible ? s.h + fall - lift : .001, 1);
-      this.matrix.setPosition(s.x + (fall + lift) / 2, s.y - (fall + lift) / 2, 0);
+      this.matrix.makeScale(visible ? bw + fall - lift : .001, visible ? bh + fall - lift : .001, 1);
+      this.matrix.setPosition(bx + (fall + lift) / 2, by - (fall + lift) / 2, 0);
       this.shadows.setMatrixAt(i, this.matrix);
     }
     this.shadows.instanceMatrix.needsUpdate = true;
