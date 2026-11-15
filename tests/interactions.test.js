@@ -190,7 +190,7 @@ describe('The Writing index', () => {
 describe('Projects and its collections', () => {
   const shelf = () => $('#collections');
   const link = (name) => $(`.collection-link[data-collection="${name}"]`);
-  const pages = ['projects/apps/index.html', 'projects/music/index.html', 'projects/apps/sample-app/index.html', 'projects/music/sample-track/index.html', 'projects/music/second-sample/index.html'];
+  const pages = ['projects/apps/index.html', 'projects/music/index.html', 'projects/apps/sample-app/index.html', 'projects/music/sample-track/index.html', 'projects/music/second-sample/index.html', 'projects/music/sweet-on-my-tongue/index.html'];
   const read = (path) => new DOMParser().parseFromString(readFileSync(path, 'utf8'), 'text/html');
 
   it('stays closed on hover and opens under Projects once it is chosen', () => {
@@ -263,6 +263,24 @@ describe('Projects and its collections', () => {
         expect(() => readFileSync(`${target}index.html`, 'utf8')).not.toThrow();
       }
     }
+  });
+
+  it('links the first real music entry to its own lyrics and source', () => {
+    const music = read('projects/music/index.html');
+    const entries = [...music.querySelectorAll('.setlist .entry')];
+    expect(entries).toHaveLength(1);
+    expect(entries[0].querySelector('.entry-name').textContent).toBe('Sweet on My Tongue');
+    expect(entries[0].getAttribute('href')).toBe('./sweet-on-my-tongue/');
+    const song = read('projects/music/sweet-on-my-tongue/index.html');
+    const listen = song.querySelector('.listen');
+    expect(song.querySelector('h1').textContent).toBe('Sweet on My Tongue');
+    expect(listen.dataset.track).toBe('sweet-on-my-tongue');
+    expect(listen.dataset.src).toBe('../../../sweet-on-my-tongue.mp3');
+    expect(song.querySelectorAll('.lyrics-verse span')).toHaveLength(32);
+    expect(song.querySelector('.lyrics-scroll').getAttribute('tabindex')).toBe('0');
+    expect(song.querySelector('.lyrics-scroll').textContent).toContain('I hear my own');
+    expect(song.querySelector('.song-source a').href).toContain('suno.com/song/0410961a-d6a3-4d15-8632-7e884e6b06c8');
+    expect(song.querySelectorAll('[autoplay]')).toHaveLength(0);
   });
 
   it('keeps the samples marked as placeholders, with nothing public implied and no recording attached', () => {
