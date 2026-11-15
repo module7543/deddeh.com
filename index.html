@@ -3,8 +3,8 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#161513" />
-    <meta name="description" content="Deddeh.com. A personal index, in draft." />
+    <meta name="theme-color" content="#141311" />
+    <meta name="description" content="Deddeh.com. Writing, projects, and contact." />
     <meta name="robots" content="noindex, nofollow" />
     <title>Deddeh.com</title>
     <link rel="icon" type="image/svg+xml" href="./favicon.svg" />
@@ -12,39 +12,36 @@
   <body>
     <a class="skip-link" href="#index">Skip to index</a>
     <div class="stage" aria-hidden="true"></div>
+    <div class="grain" aria-hidden="true"></div>
     <div class="shell">
       <header class="top">
         <a class="identity" href="./" aria-label="deddeh.com, home">deddeh.com<span class="caret" aria-hidden="true"></span></a>
-        <p class="top-note">Personal index <span aria-hidden="true">/</span> in draft</p>
+        <p class="marks" aria-hidden="true"><span data-mark="writing"></span><span data-mark="projects"></span><span data-mark="contact"></span></p>
       </header>
 
       <main id="index" tabindex="-1">
         <h1 class="sr-only">Deddeh.com</h1>
-        <nav class="toc" aria-label="Sections">
-          <p class="label" aria-hidden="true">Index</p>
-          <ol>
-            <li><button type="button" class="toc-item" data-section="writing" aria-pressed="false"><span class="num" aria-hidden="true">01</span><span class="word"><span class="word-text">Writing</span></span><span class="desc">essays &amp; observations</span></button></li>
-            <li><button type="button" class="toc-item" data-section="projects" aria-pressed="false"><span class="num" aria-hidden="true">02</span><span class="word"><span class="word-text">Projects</span></span><span class="desc">software &amp; experiments</span></button></li>
-            <li><button type="button" class="toc-item" data-section="notes" aria-pressed="false"><span class="num" aria-hidden="true">03</span><span class="word"><span class="word-text">Notes</span></span><span class="desc">links &amp; marginalia</span></button></li>
-          </ol>
-        </nav>
+
+        <div class="lede">
+          <span class="lede-bar" aria-hidden="true"></span>
+          <p class="statement" role="status">A personal site for essays, software, and whatever else holds my attention.</p>
+        </div>
 
         <div class="sheet-slot" aria-hidden="true"></div>
 
-        <div class="readout" aria-hidden="true">
-          <p class="readout-caption">(mostly)</p>
-          <p class="readout-word"><span class="readout-text">Unwritten</span><span class="readout-wipe"></span></p>
-          <span class="readout-measure"></span>
-        </div>
+        <nav class="toc" aria-label="Sections">
+          <ol>
+            <li><button type="button" class="toc-item" data-section="writing" aria-pressed="false"><span class="num" aria-hidden="true">01</span><span class="word"><span class="word-text">Writing</span></span></button></li>
+            <li><button type="button" class="toc-item" data-section="projects" aria-pressed="false"><span class="num" aria-hidden="true">02</span><span class="word"><span class="word-text">Projects</span></span></button></li>
+            <li><button type="button" class="toc-item" data-section="contact" aria-pressed="false"><span class="num" aria-hidden="true">03</span><span class="word"><span class="word-text">Contact</span></span></button></li>
+          </ol>
+          <span class="word-measure" aria-hidden="true"></span>
+        </nav>
 
-        <div class="colophon">
-          <p class="label" aria-hidden="true">About</p>
-          <p class="about">A personal site for essays, notes on markets and long-term decisions, and software experiments. The pages are still blank, so the blocks stand in for the text.</p>
-          <p class="detail" role="status">Move across the page, or choose a section.</p>
-        </div>
+        <p class="figure" aria-hidden="true"><span class="figure-no">Fig. 0</span><span class="figure-text">A ruled sheet. Move across it.</span></p>
       </main>
     </div>
-    <noscript><p class="noscript-note">Nothing is published yet. JavaScript adds the interactive page.</p></noscript>
+    <noscript><p class="noscript-note">JavaScript adds the interactive sheet.</p></noscript>
     <script type="module" src="/src/main.js"></script>
   </body>
 </html>
