@@ -118,6 +118,75 @@ describe('The index, its statement and the figure caption', () => {
   });
 });
 
+describe('The Writing index', () => {
+  const essays = () => $('#essays');
+  const link = () => $('.essay-link');
+
+  it('stays closed on hover and opens under Writing once it is chosen', () => {
+    expect(essays().hidden).toBe(true);
+    mouse(item('writing'), 'pointerenter');
+    expect(essays().hidden).toBe(true); // hover previews the section, as before
+    expect($('.figure-no').textContent).toBe('Fig. 1');
+    mouse(item('writing'), 'pointerleave');
+    item('writing').click();
+    expect(essays().hidden).toBe(false);
+    expect(item('writing').getAttribute('aria-expanded')).toBe('true');
+    expect(item('writing').nextElementSibling).toBe(essays()); // next in the tab order
+    item('projects').click();
+    expect(essays().hidden).toBe(true);
+    expect(item('writing').getAttribute('aria-expanded')).toBe('false');
+  });
+
+  it('lists every essay as a real link to a page that exists', () => {
+    const links = [...document.querySelectorAll('.essay-link')];
+    expect(links.length).toBeGreaterThan(0);
+    for (const a of links) {
+      const path = a.getAttribute('href');
+      expect(path).toMatch(/^\.\/writing\/[a-z0-9-]+\/$/);
+      const page = readFileSync(`${path.slice(2)}index.html`, 'utf8');
+      expect(page).toContain(`${a.querySelector('.essay-title').textContent}`.replace(/ Is .*/, ''));
+      expect(page).toContain('href="../../#writing"');
+    }
+  });
+
+  it('moves keyboard focus to the first essay, and Escape hands it back to Writing', () => {
+    item('writing').focus();
+    item('writing').click(); // detail 0, as a keyboard activation
+    expect(document.activeElement).toBe(link());
+    expect($('.figure-no').textContent).toBe('Fig. 1');
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
+    expect(essays().hidden).toBe(true);
+    expect(document.activeElement).toBe(item('writing'));
+  });
+
+  it('follows the link directly when motion is reduced, and leaves modified clicks alone', () => {
+    item('writing').click();
+    const plain = new MouseEvent('click', { bubbles: true, cancelable: true });
+    link().addEventListener('click', (event) => event.preventDefault(), { once: true }); // jsdom cannot navigate
+    link().dispatchEvent(plain);
+    expect(document.documentElement.classList.contains('is-proofing')).toBe(false);
+    window.setTestReducedMotion(false);
+    const modified = new MouseEvent('click', { bubbles: true, cancelable: true, metaKey: true });
+    document.addEventListener('click', (event) => event.preventDefault(), { once: true });
+    link().dispatchEvent(modified);
+    expect(document.documentElement.classList.contains('is-proofing')).toBe(false);
+    window.setTestReducedMotion(true);
+  });
+
+  it('keeps the sample essay marked as a proof, complete, and without a claimed author', () => {
+    const page = new DOMParser().parseFromString(readFileSync('writing/the-margin/index.html', 'utf8'), 'text/html');
+    expect(page.querySelector('.slug').textContent).toMatch(/Sample text.*Not an essay by Sam Deddeh/);
+    expect(page.querySelectorAll('h1')).toHaveLength(1);
+    expect(page.querySelectorAll('.prose h2').length).toBeGreaterThanOrEqual(3);
+    expect(page.querySelectorAll('.ref')).toHaveLength(page.querySelectorAll('.note').length);
+    expect(page.querySelector('.pull')).not.toBeNull();
+    expect(page.querySelector('.identity').getAttribute('href')).toBe('../../');
+    const words = page.querySelector('.prose').textContent.trim().split(/\s+/).length;
+    expect(words).toBeGreaterThan(800);
+    expect(words).toBeLessThan(1300);
+  });
+});
+
 describe('The Contact postcard', () => {
   const card = () => $('#contact-card');
   const form = () => $('#contact-card form');

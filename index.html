@@ -65,7 +65,15 @@
 
         <nav class="toc" aria-label="Sections">
           <ol>
-            <li><button type="button" class="toc-item" data-section="writing" aria-pressed="false"><span class="num" aria-hidden="true">01</span><span class="word"><span class="word-text">Writing</span></span></button></li>
+            <li>
+              <button type="button" class="toc-item" data-section="writing" aria-pressed="false" aria-expanded="false" aria-controls="essays"><span class="num" aria-hidden="true">01</span><span class="word"><span class="word-text">Writing</span></span></button>
+              <!-- The index opens under Writing. One entry per essay, newest first: add an <li> here and a folder under writing/. -->
+              <div class="essays" id="essays" hidden>
+                <ol>
+                  <li><a class="essay-link" href="./writing/the-margin/"><span class="essay-no" aria-hidden="true">E01</span><span class="essay-title">The Margin Is Part of the Page</span><span class="essay-go" aria-hidden="true">→</span><span class="essay-meta">Sample text · a design proof · 6 min</span></a></li>
+                </ol>
+              </div>
+            </li>
             <li><button type="button" class="toc-item" data-section="projects" aria-pressed="false"><span class="num" aria-hidden="true">02</span><span class="word"><span class="word-text">Projects</span></span></button></li>
             <li><button type="button" class="toc-item" data-section="contact" aria-pressed="false" aria-expanded="false" aria-controls="contact-card"><span class="num" aria-hidden="true">03</span><span class="word"><span class="word-text">Contact</span></span></button></li>
           </ol>
@@ -75,7 +83,7 @@
         <p class="figure"><span class="figure-caption" aria-hidden="true"><span class="figure-no">Fig. 0</span><span class="figure-text">The sheet, set as a name.</span></span><button type="button" class="reading" aria-pressed="false">Read it as a number</button></p>
       </main>
     </div>
-    <noscript><p class="noscript-note">JavaScript adds the interactive sheet.</p></noscript>
+    <noscript><p class="noscript-note">JavaScript adds the interactive sheet. Writing: <a href="./writing/the-margin/">The Margin Is Part of the Page</a> (sample text).</p></noscript>
     <script type="module" src="/src/main.js"></script>
   </body>
 </html>

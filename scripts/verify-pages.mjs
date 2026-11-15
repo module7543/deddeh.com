@@ -25,7 +25,8 @@ try {
     });
     const page = await context.newPage();
     page.on('pageerror', (error) => failures.push(error.message));
-    page.on('requestfailed', (request) => request.url().startsWith('https://formspree.io/') || failures.push(`${request.url()}: ${request.failure()?.errorText}`));
+    // A request cancelled by leaving the page (net::ERR_ABORTED) is not a failed asset; a missing one still shows up below as a 4xx.
+    page.on('requestfailed', (request) => request.url().startsWith('https://formspree.io/') || request.failure()?.errorText === 'net::ERR_ABORTED' || failures.push(`${request.url()}: ${request.failure()?.errorText}`));
     page.on('response', (response) => { if (response.status() >= 400) failures.push(`${response.status()} ${response.url()}`); });
     const response = await page.goto(url, { waitUntil: 'networkidle', timeout: 60000 });
     assert.equal(response.status(), 200);
@@ -83,9 +84,38 @@ try {
       await contact.hover();
       await expect(contact).toHaveClass(/is-active/);
     }
+    // Writing: the index opens under the word, the essay has its own address, and both directions of history work.
+    if (!mobile) await page.mouse.move(700, 80);
+    await page.evaluate(() => document.activeElement?.blur()); // the arrow-key check above left Projects focused
+    if (mobile) await writing.tap(); else await writing.click();
+    await expect(writing).toHaveAttribute('aria-expanded', 'true');
+    const essay = page.locator('.essay-link').first();
+    await expect(essay).toBeVisible();
+    await noOverflow('with the Writing index open');
+    if (mobile) await essay.tap(); else await essay.click();
+    await page.waitForURL(/\/writing\/[a-z0-9-]+\/$/);
+    const address = page.url();
+    await expect(page.locator('.essay h1')).toBeVisible();
+    await expect(page.locator('#essay')).toHaveCSS('opacity', '1');
+    await expect(page.locator('.slug')).toContainText('Sample text');
+    await noOverflow('on the essay');
+    await page.locator('.after').scrollIntoViewIfNeeded();
+    await expect(page.locator('.after .toc-item')).toHaveCount(3);
+    await page.screenshot({ path: `artifacts/pages-essay-${mobile ? 'mobile' : 'desktop'}.png`, fullPage: true });
+    await page.goBack();
+    await expect(page).toHaveURL(/#writing$/);
+    await expect(page.locator('#index')).toHaveCSS('opacity', '1'); // not left mid-transition by the history cache
+    await expect(page.locator('.essay-link').first()).toBeVisible();
+    const direct = await page.goto(address, { waitUntil: 'networkidle' }); // the essay's own address, opened cold
+    assert.equal(direct.status(), 200);
+    await expect(page.locator('.essay h1')).toBeVisible();
+    await page.locator('.return').click();
+    await page.waitForURL(/#writing$/);
+    await expect(page.getByRole('button', { name: /Writing/ })).toHaveAttribute('aria-pressed', 'true');
+    await expect(page.locator('.essay-link').first()).toBeVisible();
     await page.waitForTimeout(1500);
     await page.screenshot({ path: `artifacts/pages-${mobile ? 'mobile' : 'desktop'}.png`, fullPage: true });
-    console.log(`PASS ${mobile ? 'mobile touch/reduced motion' : 'desktop hover/keyboard'}: HTTP 200, assets, pin/unpin, statement and figure, mocked contact flow, Escape, arrow navigation, no overflow — ${url}`);
+    console.log(`PASS ${mobile ? 'mobile touch/reduced motion' : 'desktop hover/keyboard'}: HTTP 200, assets, pin/unpin, statement and figure, mocked contact flow, Escape, arrow navigation, Writing index, essay and back, no overflow — ${url}`);
     await context.close();
   }
   assert.deepEqual(failures, [], 'No failed assets or JavaScript page errors');

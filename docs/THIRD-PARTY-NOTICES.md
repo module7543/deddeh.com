@@ -8,5 +8,6 @@ Runtime libraries and fonts are bundled locally. Exact versions are recorded in 
 - Archivo (variable, width and weight axes) — SIL Open Font License; included in `licenses/Archivo-LICENSE.txt`.
 - Instrument Serif — SIL Open Font License; included in `licenses/Instrument-Serif-LICENSE.txt`.
 - IBM Plex Mono — SIL Open Font License; included in `licenses/IBM-Plex-Mono-LICENSE.txt`.
+- Newsreader (variable, optical size and weight axes; essay pages only) — SIL Open Font License; included in `licenses/Newsreader-LICENSE.txt`.
 
 Vite, esbuild, Vitest, and JSDOM are development tools; their notices remain in the installed packages.

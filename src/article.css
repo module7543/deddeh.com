@@ -1,0 +1,135 @@
+/* The essay page: the homepage's palette, inverted. Its ink is this page's paper, and its ground is this page's ink. */
+:root.paper {
+  color-scheme: light;
+  --bg: #ece6d8;
+  --ink: #1b1916;
+  --muted: #645e52;
+  --rule: #cfc7b5;
+  --blue-ink: #2c5aa6;
+  --teal-ink: #2a7a74;
+  --orange-ink: #a84f1e;
+  --accent: var(--blue);
+  --read: 'Newsreader Variable', 'Iowan Old Style', Georgia, serif;
+  --measure: 620px;
+  --note: 232px;
+  --gap: 56px;
+}
+.paper body { overflow-x: clip; }
+.paper .grain { opacity: .16; mix-blend-mode: multiply; }
+.paper .shell { display: block; min-height: 100svh; }
+.paper ::selection { background: var(--blue); color: var(--ink); }
+.paper :focus-visible { outline-color: var(--blue-ink); }
+:where(.paper) :where(h1, h2, dl, dd, blockquote, aside) { margin: 0; }
+
+.return { margin-left: auto; display: inline-flex; align-items: center; gap: .6em; min-height: 44px; font: 400 14px/1.4 var(--mono); letter-spacing: .01em; text-decoration: underline; text-decoration-color: var(--blue); text-decoration-thickness: 2px; text-underline-offset: 6px; }
+.return span { text-decoration: none; display: inline-block; transition: transform .35s cubic-bezier(.2, .9, .2, 1); }
+.return:hover { color: var(--blue-ink); }
+.return:hover span { transform: translateX(-4px); }
+
+#essay { outline: none; animation: arrive .5s .04s both; }
+@keyframes arrive { from { opacity: 0; } }
+/* Arriving from the index, the page waits for its blocks (article.js), and shows itself regardless if they never come. */
+.from-proof #essay { animation: arrive .4s 1.2s both; }
+.from-proof.proofed #essay { animation: arrive .5s both; }
+.proof-bars { position: absolute; inset: 0 auto auto 0; z-index: 3; pointer-events: none; transition: opacity .5s ease-in .08s; }
+.proof-bars i { position: absolute; }
+.proofed .proof-bars { opacity: 0; }
+
+/* ---- The head of the essay */
+.essay { padding-top: clamp(28px, 5.5vh, 56px); }
+.essay-head, .prose { max-width: var(--measure); margin-inline: auto; }
+.slug { display: flex; flex-wrap: wrap; align-items: baseline; gap: 4px 14px; font: 500 13px/1.5 var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--orange-ink); }
+.slug-mark { align-self: center; width: 22px; height: 8px; background: var(--orange); }
+.slug-text { font-weight: 400; letter-spacing: .01em; text-transform: none; color: var(--muted); }
+.essay-head .lede-bar { margin: clamp(40px, 8vh, 84px) 0 26px; }
+.essay h1 { font: 880 clamp(50px, 7.6vw, 112px)/.9 var(--sans); font-variation-settings: 'wdth' 62; letter-spacing: -.012em; text-transform: uppercase; text-wrap: balance; }
+/* One word of the title stands open in its block, as the chosen word does in the index. */
+.essay h1 mark { display: inline-block; margin: 0 .04em 0 -.02em; padding: .055em .09em .03em; background: var(--blue); color: var(--ink); font-variation-settings: 'wdth' 112; vertical-align: baseline; line-height: .86; }
+.dek { margin-top: clamp(22px, 3vh, 34px); max-width: 19em; font: italic 400 clamp(27px, 2.5vw, 38px)/1.14 var(--serif); letter-spacing: -.005em; text-wrap: balance; }
+.meta { display: flex; flex-wrap: wrap; gap: 10px clamp(24px, 3vw, 44px); margin-top: clamp(30px, 5vh, 52px); padding-top: 16px; border-top: 1px solid var(--rule); font: 400 13px/1.5 var(--mono); letter-spacing: .01em; }
+.meta dt { letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+
+/* ---- Running text */
+.prose { margin-top: clamp(44px, 7vh, 76px); font: 400 21px/1.62 var(--read); font-optical-sizing: auto; font-variant-numeric: oldstyle-nums; font-kerning: normal; color: var(--ink); text-wrap: pretty; hanging-punctuation: first; }
+.prose > * + * { margin-top: 1.05em; }
+.prose .lead { font-size: 1.22em; line-height: 1.46; letter-spacing: -.003em; }
+.prose .lead + * { margin-top: 1.25em; }
+.prose em { font-style: italic; }
+.prose a { text-decoration: underline; text-decoration-color: var(--blue); text-decoration-thickness: 2px; text-underline-offset: .2em; text-decoration-skip-ink: auto; transition: color .15s; }
+.prose a:hover { color: var(--blue-ink); }
+.prose h2 { position: relative; margin-top: 2.1em; font: italic 400 clamp(31px, 2.6vw, 38px)/1.12 var(--serif); letter-spacing: -.005em; text-wrap: balance; }
+.prose h2 + * { margin-top: .75em; }
+.section-no { display: block; margin-bottom: 12px; font: 400 14px/1 var(--mono); font-style: normal; letter-spacing: .01em; color: var(--blue-ink); }
+
+/* Notes: in the margin where there is one, folded into the text where there is not. */
+.prose { counter-reset: ref note; }
+.ref { counter-increment: ref; font: 500 .62em/0 var(--mono); vertical-align: .62em; padding-left: .15em; color: var(--blue-ink); }
+.ref::after { content: counter(ref); }
+.noted { position: relative; }
+.note { --tone: var(--teal); counter-increment: note; display: block; margin: .9em 0 0; padding-left: 16px; border-left: 2px solid var(--tone); font: 400 13px/1.6 var(--mono); letter-spacing: .01em; color: var(--muted); text-wrap: pretty; }
+.note[data-tone='orange'] { --tone: var(--orange); }
+.note::before { content: counter(note) '  '; white-space: pre; color: var(--ink); font-weight: 500; }
+.note em { font-style: normal; color: var(--ink); }
+
+/* The pull quote is set as the homepage sets its statement: a bar, then the italic. */
+.pull { margin-top: 2.2em; }
+.prose .pull + * { margin-top: 2.2em; }
+.pull .lede-bar { --accent: var(--orange); margin-bottom: 20px; }
+.pull p { font: italic 400 clamp(33px, 3.5vw, 50px)/1.08 var(--serif); letter-spacing: -.008em; text-wrap: balance; }
+/* The text ends where the sheet's cursor stands. */
+.end { display: inline-block; width: 9px; height: 18px; margin-left: 9px; vertical-align: -2px; background: var(--orange); animation: blink 1.25s steps(1) infinite; }
+
+/* ---- After the essay: the index again, and the figure's caption. */
+.after { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: end; gap: 28px clamp(28px, 4vw, 72px); margin-top: clamp(84px, 14vh, 160px); padding: 26px 0 clamp(22px, 3.6vh, 40px); border-top: 1px solid var(--rule); }
+.after-label { margin-bottom: 20px; font: 400 13px/1.4 var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.after .toc { grid-column: 1; grid-row: 1; }
+.after .word { font-size: clamp(46px, 5.4vw, 86px); font-variation-settings: 'wdth' 62; transition: font-variation-settings .5s cubic-bezier(.2, .9, .2, 1); }
+.after .toc-item:hover .word, .after .toc-item:focus-visible .word { font-variation-settings: 'wdth' 108; }
+.after .toc-item:hover .word::before, .after .toc-item:focus-visible .word::before { transform: scaleX(1); }
+.after .toc-item:hover .num, .after .toc-item:focus-visible .num { color: var(--ink); }
+.after .toc-item:focus-visible { outline-offset: 2px; }
+.after .figure { grid-column: 2; grid-row: 1; max-width: 30em; }
+.after .figure-caption { flex-wrap: nowrap; text-align: right; }
+
+@media (min-width: 1100px) {
+  /* The column sits left of centre and keeps a margin to its right for notes. */
+  .essay-head, .prose { margin-inline: calc((100% - var(--measure) - var(--gap) - var(--note)) * .44) 0; }
+  .essay-head { max-width: none; }
+  .essay h1 { max-width: 11em; }
+  .meta { max-width: calc(var(--measure) + var(--gap) + var(--note)); }
+  .section-no { position: absolute; right: calc(100% + 30px); top: .78em; margin: 0; }
+  .note { position: absolute; top: .5em; left: calc(100% + var(--gap)); width: var(--note); margin: 0; padding: 0; border: 0; }
+  .note::before { content: counter(note); display: flex; align-items: center; gap: 10px; margin-bottom: 9px; }
+  .note::after { content: ''; position: absolute; top: .55em; left: 1.6em; width: 22px; height: 8px; background: var(--tone); }
+  .pull { width: calc(var(--measure) + var(--gap) + var(--note)); }
+}
+@media (max-width: 820px) {
+  .paper { --measure: 34rem; }
+  .return { font-size: 13px; }
+  .essay-head .lede-bar { margin: 34px 0 20px; height: 7px; }
+  .essay h1 { font-size: clamp(46px, 14.4vw, 76px); }
+  .dek { font-size: 25px; }
+  .prose { font-size: 19px; line-height: 1.6; }
+  .prose .lead { font-size: 1.16em; }
+  .after { grid-template-columns: minmax(0, 1fr); }
+  .after .figure { grid-column: 1; grid-row: 2; justify-self: start; }
+  .after .figure-caption { text-align: left; }
+}
+@media (max-width: 480px) { .paper .marks span:not(.is-on) { display: none; } }
+
+/* Leaving: the paper darkens to the homepage's ground before the index returns. */
+.paper, .paper body { transition: background-color .34s .06s; }
+.paper.is-leaving { --bg: #141311; --rule: #322f2a; }
+.paper.is-leaving .top { color: #ece6d8; }
+.paper.is-leaving #essay, .paper.is-leaving .return { opacity: 0; animation: none; transition: opacity .2s; }
+@media (prefers-reduced-motion: reduce) {
+  #essay, .from-proof #essay, .from-proof.proofed #essay { animation: none; }
+  .end { animation: none; }
+  .paper, .paper body, .return span, .prose a, .after .word { transition: none; }
+}
+@media print {
+  .grain, .return, .marks, .after .toc, .skip-link { display: none; }
+  .paper { --bg: #fff; }
+  .note { break-inside: avoid; }
+}
+.paper .figure-no { color: var(--blue-ink); }
