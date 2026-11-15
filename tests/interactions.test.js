@@ -19,6 +19,8 @@ beforeEach(() => {
   for (const name of ['writing', 'projects', 'contact']) mouse(item(name), 'pointerleave');
   document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
   document.activeElement?.blur();
+  $('#contact-card form').reset();
+  vi.unstubAllGlobals();
 });
 
 describe('The index, its statement and the figure caption', () => {
@@ -26,7 +28,8 @@ describe('The index, its statement and the figure caption', () => {
     expect([...document.querySelectorAll('.toc-item')].map((el) => el.dataset.section)).toEqual(['writing', 'projects', 'contact']);
     expect($('.statement').textContent).toContain('A personal site');
     expect($('.figure-no').textContent).toBe('Fig. 0');
-    expect(document.querySelectorAll('article, time, form, input, a[href^="mailto:"]')).toHaveLength(0);
+    expect(document.querySelectorAll('article, time, a[href^="mailto:"]')).toHaveLength(0);
+    expect($('#contact-card').hidden).toBe(true);
     expect(document.body.textContent).not.toMatch(/unwritten|nothing published/i);
   });
 
@@ -41,7 +44,7 @@ describe('The index, its statement and the figure caption', () => {
     expect(document.querySelectorAll('.marks .is-on')).toHaveLength(0);
   });
 
-  it('pins one section at a time, records it in the URL, and Escape clears it', () => {
+  it('pins one section at a time, records it in the URL, and Escape clears it', async () => {
     item('writing').click();
     expect(item('writing').getAttribute('aria-pressed')).toBe('true');
     expect(location.hash).toBe('#writing');
@@ -52,6 +55,9 @@ describe('The index, its statement and the figure caption', () => {
     document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
     expect(item('contact').getAttribute('aria-pressed')).toBe('false');
     expect(location.hash).toBe('');
+    expect(document.activeElement).toBe(item('contact')); // focus returns to Contact, which previews it
+    item('contact').blur();
+    await Promise.resolve();
     expect($('.figure-no').textContent).toBe('Fig. 0');
   });
 
@@ -77,5 +83,118 @@ describe('The index, its statement and the figure caption', () => {
 
   it('keeps the page usable when WebGL is unavailable', async () => {
     await vi.waitFor(() => expect($('.stage').classList.contains('is-fallback')).toBe(true));
+  });
+});
+
+describe('The Contact postcard', () => {
+  const card = () => $('#contact-card');
+  const form = () => $('#contact-card form');
+  const submit = () => form().dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+  const fill = (email, message, name = '') => { $('#cf-name').value = name; $('#cf-email').value = email; $('#cf-message').value = message; };
+  const reply = (body, status = 200) => Promise.resolve({ ok: status < 400, status, json: () => Promise.resolve(body) });
+  const settled = () => new Promise((resolve) => setTimeout(resolve, 0));
+
+  it('opens on activation, not on hover, and holds its section while open', () => {
+    mouse(item('contact'), 'pointerenter');
+    expect(card().hidden).toBe(true);
+    mouse(item('contact'), 'pointerleave');
+    item('contact').click();
+    expect(card().hidden).toBe(false);
+    expect(item('contact').getAttribute('aria-expanded')).toBe('true');
+    expect($('.statement').textContent).toContain('A few lines');
+    mouse(item('writing'), 'pointerenter');
+    expect($('.statement').textContent).toContain('A few lines');
+    expect(card().hidden).toBe(false);
+  });
+
+  it('closes with Escape or Close and returns focus to Contact, keeping what was typed', () => {
+    item('contact').click();
+    fill('a@b.co', 'Kept.');
+    $('.card-close').click();
+    expect(card().hidden).toBe(true);
+    expect(document.activeElement).toBe(item('contact'));
+    expect(item('contact').getAttribute('aria-expanded')).toBe('false');
+    item('contact').click();
+    expect($('#cf-message').value).toBe('Kept.');
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
+    expect(card().hidden).toBe(true);
+  });
+
+  it('validates before sending anything', () => {
+    const fetch = vi.fn();
+    vi.stubGlobal('fetch', fetch);
+    item('contact').click();
+    fill('', '');
+    submit();
+    expect(fetch).not.toHaveBeenCalled();
+    expect($('#cf-email-error').textContent).toContain('Add an email');
+    expect($('#cf-message-error').textContent).toContain('Write a message');
+    expect($('#cf-email').getAttribute('aria-invalid')).toBe('true');
+    expect(document.activeElement).toBe($('#cf-email'));
+    fill('not-an-email', 'Hello');
+    submit();
+    expect(fetch).not.toHaveBeenCalled();
+    expect($('#cf-email-error').textContent).toContain('incomplete');
+    expect($('#cf-message-error').hidden).toBe(true);
+  });
+
+  it('sends once to the Formspree form and confirms only after it answers', async () => {
+    let answer;
+    const fetch = vi.fn(() => new Promise((resolve) => { answer = () => resolve(reply({ next: '/thanks', ok: true })); }));
+    vi.stubGlobal('fetch', fetch);
+    item('contact').click();
+    fill('visitor@example.com', 'Hello there.', 'A. Visitor');
+    submit();
+    submit(); // an accidental second press
+    await settled();
+    expect(fetch).toHaveBeenCalledTimes(1);
+    const [url, request] = fetch.mock.calls[0];
+    expect(url).toBe('https://formspree.io/f/moedjgda');
+    expect(request.method).toBe('POST');
+    expect(request.headers.Accept).toBe('application/json');
+    expect(Object.fromEntries(request.body)).toEqual({ name: 'A. Visitor', email: 'visitor@example.com', message: 'Hello there.', _gotcha: '' });
+    expect($('.send').getAttribute('aria-disabled')).toBe('true');
+    expect($('.statement').textContent).not.toContain('Posted');
+    answer();
+    await settled(); await settled();
+    expect($('.statement').textContent).toBe('Posted. Thank you.');
+    expect(card().hidden).toBe(true);
+    expect($('.lede-actions').hidden).toBe(false);
+    expect($('#cf-message').value).toBe('');
+    $('.again').click();
+    expect(card().hidden).toBe(false);
+    expect($('.lede-actions').hidden).toBe(true);
+  });
+
+  it('keeps the message when sending fails and lets the visitor retry', async () => {
+    const fetch = vi.fn(() => Promise.reject(new TypeError('Failed to fetch')));
+    vi.stubGlobal('fetch', fetch);
+    item('contact').click();
+    fill('visitor@example.com', 'Do not lose this.');
+    submit();
+    await settled(); await settled();
+    expect($('.form-error-text').textContent).toContain('didn’t go through');
+    expect($('.via-formspree').hidden).toBe(false);
+    expect($('.send-text').textContent).toBe('Try again');
+    expect($('.send').getAttribute('aria-disabled')).toBe('false');
+    expect($('#cf-message').value).toBe('Do not lose this.');
+    expect($('.statement').textContent).not.toContain('Posted');
+    fetch.mockImplementation(() => reply({ next: '/thanks', ok: true }));
+    submit();
+    await settled(); await settled();
+    expect(fetch).toHaveBeenCalledTimes(2);
+    expect($('.statement').textContent).toBe('Posted. Thank you.');
+    expect($('.form-error-text').textContent).toBe('');
+  });
+
+  it('shows a field error that Formspree reports', async () => {
+    vi.stubGlobal('fetch', vi.fn(() => reply({ errors: [{ field: 'email', code: 'TYPE_EMAIL', message: 'should be an email' }] }, 422)));
+    item('contact').click();
+    fill('visitor@example.com', 'Hello');
+    submit();
+    await settled(); await settled();
+    expect($('#cf-email-error').textContent).toBe('should be an email');
+    expect(document.activeElement).toBe($('#cf-email'));
+    expect(card().hidden).toBe(false);
   });
 });

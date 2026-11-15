@@ -4,6 +4,7 @@ Runtime libraries and fonts are bundled locally. Exact versions are recorded in 
 
 - Three.js — MIT; license in `licenses/Three-LICENSE.txt`.
 - GSAP 3.13.0 — [GSAP standard “no charge” license](https://gsap.com/standard-license/), as identified by the installed package.
+- @formspree/ajax and @formspree/core — MIT, as stated in the installed packages. Submissions are sent to Formspree, a third-party service.
 - Archivo (variable, width and weight axes) — SIL Open Font License; included in `licenses/Archivo-LICENSE.txt`.
 - Instrument Serif — SIL Open Font License; included in `licenses/Instrument-Serif-LICENSE.txt`.
 - IBM Plex Mono — SIL Open Font License; included in `licenses/IBM-Plex-Mono-LICENSE.txt`.

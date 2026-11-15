@@ -110,9 +110,10 @@ function contact() {
 }
 
 const FORMATIONS = { blank: blank(), writing: writing(), projects: projects(), contact: contact() };
-const SPIN = { blank: -.4, writing: -.34, projects: -.46, contact: -.3 };
+const SPIN = { blank: -.4, writing: -.34, projects: -.46, contact: -.3, card: 0 };
+const PITCH_X = -.98; // how far the sheet leans back when it is not laid flat
 const raw = (hex) => new Color().setHex(hex, LinearSRGBColorSpace); // shader colours stay in display space
-const TINT = { blank: raw(0x8a6a4c), writing: raw(C.blue), projects: raw(C.green), contact: raw(C.orange) };
+const TINT = { blank: raw(0x8a6a4c), writing: raw(C.blue), projects: raw(C.green), contact: raw(C.orange), card: raw(C.orange) };
 
 const FLOOR_VERTEX = `varying vec2 vP; void main() { vP = position.xy; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.); }`;
 const FLOOR_FRAGMENT = `
@@ -147,7 +148,7 @@ export class Field {
     this.scene = new Scene();
     this.camera = new OrthographicCamera(-1, 1, 1, -1, -4000, 4000);
     this.group = new Group();
-    this.group.rotation.set(-.98, 0, SPIN.blank, 'XYZ');
+    this.group.rotation.set(PITCH_X, 0, SPIN.blank, 'XYZ');
     this.scene.add(this.group);
 
     // Flat, graphic shading baked into the box: bright top, two darker visible sides.
@@ -170,10 +171,12 @@ export class Field {
     this.shadows.position.z = .04;
     this.group.add(this.floor, this.shadows, this.mesh);
 
-    this.state = FORMATIONS.blank.map((b) => ({ ...b, col: new Color(b.c) }));
+    this.state = FORMATIONS.blank.map((b) => ({ ...b, h: BLOCK_H, col: new Color(b.c) }));
     this.from = this.state.map((b) => ({ ...b, col: b.col.clone() }));
     this.to = FORMATIONS.blank;
+    this.formations = { ...FORMATIONS };
     this.toColors = Object.fromEntries(Object.entries(FORMATIONS).map(([k, f]) => [k, f.map((b) => new Color(b.c))]));
+    this.flat = { v: 0 }; this.home = { x: 0, y: 0 }; this.cardEl = null;
     this.name = 'blank';
     this.delay = FORMATIONS.blank.map((b) => ((b.x - LEFT) / W) * .45 + ((rowY(0) - b.y) / (PITCH * ROWS)) * .55);
     this.progress = { t: 1 };
@@ -212,7 +215,7 @@ export class Field {
     this.group.scale.setScalar(scale);
     const cx = narrow ? w * .5 : slot.left + slot.width * .5;
     const cy = slot.top + slot.height * (narrow ? .56 : .41);
-    this.group.position.set(cx - w / 2, h / 2 - cy, 0);
+    this.home.x = cx - w / 2; this.home.y = h / 2 - cy;
     this.dirty = true;
   }
 
@@ -229,57 +232,83 @@ export class Field {
     gsap.to(this.pointer, { power: 1, tiltX: (clientY / h - .5) * .07 * tilt, tiltY: (clientX / w - .5) * .1 * tilt, duration: .6, ease: 'power2.out', overwrite: 'auto' });
   }
 
-  select(name = 'blank') {
-    if (name === this.name) return;
+  select(name = 'blank', duration = 1.15) {
+    if (name === this.name && name !== 'card') return;
+    const changed = name !== this.name;
     this.name = name;
-    this.state.forEach((s, i) => { Object.assign(this.from[i], { x: s.x, y: s.y, w: s.w, z: s.z }); this.from[i].col.copy(s.col); });
-    this.to = FORMATIONS[name];
+    this.state.forEach((s, i) => { Object.assign(this.from[i], { x: s.x, y: s.y, w: s.w, h: s.h, z: s.z }); this.from[i].col.copy(s.col); });
+    this.to = this.formations[name];
     gsap.killTweensOf(this.progress);
     this.progress.t = 0;
     if (this.reduced) this.progress.t = 1;
-    else gsap.to(this.progress, { t: 1, duration: 1.15, ease: 'none' });
+    else gsap.to(this.progress, { t: 1, duration, ease: 'none' });
+    this.dirty = true;
+    if (!changed) return;
     const tint = this.floor.material.uniforms.uTint.value, to = TINT[name];
     gsap.to(tint, { r: to.r, g: to.g, b: to.b, duration: this.reduced ? 0 : 1.1, ease: 'power2.out', overwrite: 'auto' });
     gsap.to(this.group.rotation, { z: SPIN[name], duration: this.reduced ? 0 : 1.3, ease: 'power3.inOut', overwrite: 'auto' });
-    this.dirty = true;
+    gsap.to(this.flat, { v: name === 'card' ? 1 : 0, duration: this.reduced ? 0 : 1.2, ease: 'power3.inOut', overwrite: 'auto' });
+  }
+
+  // Lay the sheet flat behind a DOM element and set the blocks from its parts.
+  // Bars are in CSS pixels from the element's centre (y down); they follow it as it scrolls.
+  card(element, bars, cursor, duration) {
+    const unit = 1 / this.group.scale.x, base = this.formations.blank;
+    const place = (bar) => ({ x: bar.x * unit, y: -bar.y * unit, w: bar.w * unit, h: bar.h * unit, z: bar.z ?? 0, c: bar.c });
+    const to = base.map((b, i) => (i < CURSOR && bars[i] ? place(bars[i]) : { ...b, w: 0, z: 0 }));
+    if (cursor) to[CURSOR] = place(cursor);
+    this.cardEl = element;
+    this.formations.card = to;
+    this.toColors.card = to.map((b) => new Color(b.c));
+    this.select('card', duration ?? (this.name === 'card' ? .5 : 1.15));
   }
 
   setReducedMotion(reduced) { this.reduced = reduced; this.dirty = true; }
+  refresh() { this.dirty = true; }
 
   frame(delta) {
     if (!this.visible) return;
     const p = this.pointer;
-    const moving = this.progress.t < 1 || p.power > .002 || gsap.isTweening(this.group.rotation) || gsap.isTweening(this.floor.material.uniforms.uTint.value);
+    const moving = this.progress.t < 1 || p.power > .002 || gsap.isTweening(this.group.rotation) || gsap.isTweening(this.floor.material.uniforms.uTint.value) || gsap.isTweening(this.flat);
     if (this.reduced && !moving && !this.dirty) return;
     this.dirty = false;
     this.time += delta / 1000;
     const colors = this.toColors[this.name];
     const spread = .8, T = this.progress.t * (1 + spread);
-    this.group.rotation.x = -.98 + p.tiltX;
-    this.group.rotation.y = p.tiltY;
+    const flat = this.flat.v, lean = 1 - flat;
+    this.group.rotation.x = (PITCH_X + p.tiltX) * lean;
+    this.group.rotation.y = p.tiltY * lean;
+    let px = this.home.x, py = this.home.y;
+    if (flat > 0 && this.cardEl) {
+      const r = this.cardEl.getBoundingClientRect();
+      px += (r.left + r.width / 2 - window.innerWidth / 2 - px) * flat;
+      py += (window.innerHeight / 2 - (r.top + r.height / 2) - py) * flat;
+    }
+    this.group.position.set(px, py, 0);
     this.floor.material.uniforms.uPointer.value.set(p.x, p.y, p.power);
     for (let i = 0; i < N; i++) {
       const a = this.from[i], b = this.to[i], s = this.state[i];
       const k = ease(Math.min(Math.max(T - this.delay[i] * spread, 0), 1));
       s.x = a.x + (b.x - a.x) * k; s.y = a.y + (b.y - a.y) * k;
       s.w = a.w + (b.w - a.w) * k; s.z = a.z + (b.z - a.z) * k;
+      s.h = a.h + ((b.h ?? BLOCK_H) - a.h) * k;
       s.col.copy(a.col).lerp(colors[i], k);
       const dx = s.x - p.x, dy = s.y - p.y;
       const near = p.power * Math.exp(-(dx * dx + dy * dy) / 330);
       const wave = this.reduced ? 0 : .22 * (1 + Math.sin(this.time * .7 + s.x * .06 - s.y * .11));
       const arc = Math.sin(k * Math.PI) * 2.2;
-      let depth = BLOCK_Z + near * 7 + wave + arc;
+      let depth = BLOCK_Z + (near * 7 + wave) * (1 - flat * .7) + arc;
       this.color.copy(s.col).lerp(this.hi, near * .6);
       if (i === CURSOR && !this.reduced) this.color.lerp(colors[0], (Math.sin(this.time * 3.2) > .2 ? 0 : .75) * (this.name === 'blank' ? 1 : 0));
       const visible = s.w > .06;
       if (!visible) depth = .001;
-      this.matrix.makeScale(Math.max(s.w, .001), visible ? BLOCK_H : .001, depth);
+      this.matrix.makeScale(Math.max(s.w, .001), visible ? s.h : .001, depth);
       this.matrix.setPosition(s.x, s.y, s.z + depth / 2);
       this.mesh.setMatrixAt(i, this.matrix);
       this.mesh.setColorAt(i, this.color);
       // The shadow runs from the block's footprint away from the light; taller and higher blocks cast further.
       const fall = visible ? (s.z + depth) * .62 : 0, lift = visible ? s.z * .62 : 0;
-      this.matrix.makeScale(visible ? s.w + fall - lift : .001, visible ? BLOCK_H + fall - lift : .001, 1);
+      this.matrix.makeScale(visible ? s.w + fall - lift : .001, visible ? s.h + fall - lift : .001, 1);
       this.matrix.setPosition(s.x + (fall + lift) / 2, s.y - (fall + lift) / 2, 0);
       this.shadows.setMatrixAt(i, this.matrix);
     }

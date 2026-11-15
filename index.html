@@ -25,15 +25,49 @@
         <div class="lede">
           <span class="lede-bar" aria-hidden="true"></span>
           <p class="statement" role="status">A personal site for essays, software, and whatever else holds my attention.</p>
+          <p class="lede-actions" hidden><button type="button" class="again">Write another</button></p>
         </div>
 
         <div class="sheet-slot" aria-hidden="true"></div>
+
+        <section class="card" id="contact-card" aria-labelledby="card-title" hidden>
+          <form class="card-form" action="https://formspree.io/f/moedjgda" method="POST" novalidate>
+            <div class="card-head">
+              <h2 class="card-title" id="card-title" tabindex="-1">Postcard</h2>
+              <button type="button" class="card-close">Close <span aria-hidden="true">×</span></button>
+              <span class="stamp-slot" aria-hidden="true"></span>
+            </div>
+            <div class="card-from">
+              <div class="field">
+                <label for="cf-name">Name <span class="optional">optional</span></label>
+                <input id="cf-name" name="name" type="text" autocomplete="name" />
+              </div>
+              <div class="field">
+                <label for="cf-email">Email</label>
+                <input id="cf-email" name="email" type="email" autocomplete="email" inputmode="email" autocapitalize="off" spellcheck="false" required aria-describedby="cf-email-error" />
+                <p class="field-error" id="cf-email-error" hidden></p>
+              </div>
+            </div>
+            <span class="card-divider" aria-hidden="true"></span>
+            <div class="card-message field">
+              <label for="cf-message">Message</label>
+              <textarea id="cf-message" name="message" rows="7" required aria-describedby="cf-message-error"></textarea>
+              <p class="field-error" id="cf-message-error" hidden></p>
+            </div>
+            <p class="gotcha" aria-hidden="true"><label>Leave this field empty <input type="text" name="_gotcha" tabindex="-1" autocomplete="off" /></label></p>
+            <div class="card-foot">
+              <p class="notice">Please don’t send anything confidential. Writing to me here doesn’t create an attorney-client relationship.</p>
+              <button type="submit" class="send"><span class="send-text">Send</span></button>
+              <p class="form-error" role="alert"><span class="form-error-text"></span> <button type="button" class="via-formspree" hidden>Send it through Formspree’s page instead</button></p>
+            </div>
+          </form>
+        </section>
 
         <nav class="toc" aria-label="Sections">
           <ol>
             <li><button type="button" class="toc-item" data-section="writing" aria-pressed="false"><span class="num" aria-hidden="true">01</span><span class="word"><span class="word-text">Writing</span></span></button></li>
             <li><button type="button" class="toc-item" data-section="projects" aria-pressed="false"><span class="num" aria-hidden="true">02</span><span class="word"><span class="word-text">Projects</span></span></button></li>
-            <li><button type="button" class="toc-item" data-section="contact" aria-pressed="false"><span class="num" aria-hidden="true">03</span><span class="word"><span class="word-text">Contact</span></span></button></li>
+            <li><button type="button" class="toc-item" data-section="contact" aria-pressed="false" aria-expanded="false" aria-controls="contact-card"><span class="num" aria-hidden="true">03</span><span class="word"><span class="word-text">Contact</span></span></button></li>
           </ol>
           <span class="word-measure" aria-hidden="true"></span>
         </nav>
