@@ -19,6 +19,7 @@ beforeEach(() => {
   for (const name of ['writing', 'projects', 'contact']) mouse(item(name), 'pointerleave');
   document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
   document.activeElement?.blur();
+  if ($('.reading').getAttribute('aria-pressed') === 'true') $('.reading').click();
   $('#contact-card form').reset();
   vi.unstubAllGlobals();
 });
@@ -26,11 +27,42 @@ beforeEach(() => {
 describe('The index, its statement and the figure caption', () => {
   it('starts idle with Writing, Projects and Contact and no invented content', () => {
     expect([...document.querySelectorAll('.toc-item')].map((el) => el.dataset.section)).toEqual(['writing', 'projects', 'contact']);
-    expect($('.statement').textContent).toContain('A personal site');
+    expect($('.statement').textContent).toContain('Sam Deddeh');
     expect($('.figure-no').textContent).toBe('Fig. 0');
     expect(document.querySelectorAll('article, time, a[href^="mailto:"]')).toHaveLength(0);
     expect($('#contact-card').hidden).toBe(true);
     expect(document.body.textContent).not.toMatch(/unwritten|nothing published/i);
+  });
+
+  it('reads the name as a number and back, only while the sheet is at rest', () => {
+    const reading = $('.reading');
+    expect(reading.hidden).toBe(false);
+    expect(reading.textContent).toBe('Read it as a number');
+    reading.click();
+    expect(reading.getAttribute('aria-pressed')).toBe('true');
+    expect($('.figure-no').textContent).toBe('Fig. 0x');
+    expect($('.figure-text').textContent).toContain((0xdedde).toLocaleString('en-US')); // 912,862
+    expect($('.figure-text').textContent).toContain((0xdedde).toString(2).replace(/(?=(?:.{4})+$)(?!^)/g, ' '));
+    expect($('.statement').textContent).toContain('hexadecimal');
+    expect(location.hash).toBe('#0xdedde');
+    mouse(item('writing'), 'pointerenter'); // a section outranks either reading
+    expect(reading.hidden).toBe(true);
+    expect($('.figure-no').textContent).toBe('Fig. 1');
+    mouse(item('writing'), 'pointerleave');
+    expect($('.figure-no').textContent).toBe('Fig. 0x');
+    $('.sheet-slot').click(); // the sheet itself answers too
+    expect(reading.getAttribute('aria-pressed')).toBe('false');
+    expect($('.figure-no').textContent).toBe('Fig. 0');
+    expect($('.statement').textContent).toContain('Sam Deddeh');
+    expect(location.hash).toBe('');
+  });
+
+  it('leaves the sheet alone while a section is pinned', () => {
+    item('projects').click();
+    $('.sheet-slot').click();
+    expect($('.figure-no').textContent).toBe('Fig. 2');
+    expect($('.reading').hidden).toBe(true);
+    expect(location.hash).toBe('#projects');
   });
 
   it.each([['writing', 'Fig. 1', 'Essays'], ['projects', 'Fig. 2', 'Software'], ['contact', 'Fig. 3', 'correspondence']])('previews %s on hover and returns to idle', (name, figure, words) => {
