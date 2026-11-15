@@ -88,7 +88,12 @@ ol { padding: 0; list-style: none; }
 .card-form { display: grid; grid-template-columns: minmax(0, .82fr) 9px minmax(0, 1.18fr); column-gap: 26px; row-gap: 20px; padding: 30px 30px 32px; background: rgba(20, 19, 17, .55); border-block: 6px solid var(--rule); }
 .has-field .card-form { border-block-color: transparent; background: none; }
 .card-head { grid-column: 1 / -1; display: flex; align-items: flex-start; gap: 22px; min-height: 70px; }
-.card-title { margin: 0 auto 0 0; padding-top: 12px; font: 400 13px/1.4 var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); outline-offset: 8px; }
+.card-address { margin-right: auto; min-width: 0; }
+.card-title { margin: 0; padding-top: 12px; font: 400 13px/1.4 var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); outline-offset: 8px; }
+/* The addressee, written on the card in the hand the statements are set in. */
+.card-to { display: flex; align-items: baseline; gap: 12px; margin-top: 4px; }
+.card-to-label { font: 400 13px/1.4 var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.card-to-name { font: italic 400 25px/1.2 var(--serif); letter-spacing: -.005em; color: var(--ink); white-space: nowrap; }
 .stamp-slot { flex: none; width: 52px; height: 64px; margin-left: 30px; background: var(--orange); }
 .has-field .stamp-slot { background: none; }
 .card-from { grid-column: 1; display: grid; align-content: start; gap: 22px; }

@@ -86,6 +86,25 @@ describe('The index, its statement and the figure caption', () => {
   });
 });
 
+describe('The personal signature', () => {
+  it('names the owner once, as the postcard\'s addressee, and nowhere on the default page', () => {
+    expect($('.card-to').textContent.replace(/\s+/g, ' ').trim()).toBe('To Sam Deddeh');
+    expect($('#contact-card').hidden).toBe(true);
+    expect(document.body.textContent.match(/Sam Deddeh/g)).toHaveLength(1);
+    expect(document.title).toBe('Deddeh.com');
+    expect($('meta[name="robots"]').content).toBe('noindex, nofollow');
+  });
+
+  it('keeps a D in the paper: four cells by eight rows, centred, away from the cursor', async () => {
+    const { WATERMARK } = await import('../src/field.js');
+    const rows = Array.from({ length: 14 }, (_, r) => WATERMARK.slice(r * 10, r * 10 + 10).map((on) => (on ? '#' : '.')).join(''));
+    expect(rows.slice(3, 11)).toEqual(['...###....', '...#..#...', '...#..#...', '...#..#...', '...#..#...', '...#..#...', '...#..#...', '...###....']);
+    expect([...rows.slice(0, 3), ...rows.slice(11)].join('')).not.toContain('#');
+    expect(WATERMARK).toHaveLength(141);
+    expect(WATERMARK[140]).toBe(0);
+  });
+});
+
 describe('The Contact postcard', () => {
   const card = () => $('#contact-card');
   const form = () => $('#contact-card form');
