@@ -109,11 +109,51 @@ function contact() {
   return out;
 }
 
-const FORMATIONS = { blank: blank(), writing: writing(), projects: projects(), contact: contact() };
-const SPIN = { blank: -.4, writing: -.34, projects: -.46, contact: -.3, card: 0 };
+// The name, set on the sheet's own rows and broken where it is spoken: DED / DEH.
+// A letter is seven scanlines of runs, drawn heavy enough to join into strokes.
+const LINES = ['DED', 'DEH'], SCANS = ROWS / LINES.length, GLYPH = 25, GAP = 5.5, STEM = 7.8, SCAN = 4.75, LINE = 4;
+const INSET = 3, letterX = (n) => LEFT + INSET + n * (GLYPH + GAP);
+const scanY = (r) => (r < SCANS ? 1 : -1) * (ROWS * PITCH) / 2 - (r < SCANS ? 1 : -1) * LINE / 2 - (r < SCANS ? r : r - ROWS + 1) * SCAN;
+function runs(letter, k) {
+  const edge = k === 0 || k === SCANS - 1, bar = k === (SCANS - 1) / 2, stems = [[0, STEM], [GLYPH - STEM, STEM]];
+  if (letter === 'D') return edge ? [[0, GLYPH - 5]] : stems;
+  if (letter === 'E') return edge ? [[0, GLYPH - 2]] : bar ? [[0, GLYPH - 7]] : [[0, STEM]];
+  return bar ? [[0, GLYPH]] : stems; // H
+}
+function name() {
+  const base = blank(), out = [];
+  for (let r = 0; r < ROWS; r++) {
+    let c = 0;
+    [...LINES[Math.floor(r / SCANS)]].forEach((letter, n) => {
+      for (const [x, w] of runs(letter, r % SCANS)) { out.push({ x: letterX(n) + x + w / 2, y: scanY(r), w, h: LINE, z: 0, c: C.text }); c++; }
+    });
+    for (; c < COLS; c++) out.push({ ...hide(base, r * COLS + c), y: scanY(r) });
+  }
+  out.push({ x: letterX(3) + 1.3, y: scanY(ROWS - 1), w: 2.6, z: 1.6, c: C.orange });
+  return out;
+}
+
+// The same name read as a number. DEDDE is hexadecimal (the h is how assembly marks it):
+// one row a digit, four bits a row, high bit first. A raised block is a one.
+function bits() {
+  const out = name().map((b) => ({ ...b, w: 0, z: 0 }));
+  const digits = [...LINES.join('')].slice(0, -1), step = (ROWS * PITCH) / digits.length, w = 18.5, h = 10.5, pitch = w + 3.5;
+  digits.forEach((digit, i) => {
+    const value = parseInt(digit, 16), y = ((digits.length - 1) / 2 - i) * step;
+    for (let j = 0; j < 4; j++) {
+      const on = (value >> (3 - j)) & 1;
+      out[(1 + i * 3) * COLS + j] = { x: LEFT + INSET + j * pitch + w / 2, y, w, h, z: on ? 4.5 : 0, c: on ? C.ink : C.slab };
+    }
+  });
+  out[CURSOR] = { x: LEFT + INSET + 4 * pitch + 1.3, y: -2 * step - h / 2 + BLOCK_H / 2, w: 2.6, z: 1.6, c: C.orange }; // the h
+  return out;
+}
+
+const FORMATIONS = { blank: blank(), name: name(), bits: bits(), writing: writing(), projects: projects(), contact: contact() };
+const SPIN = { blank: -.4, name: -.4, bits: -.4, writing: -.34, projects: -.46, contact: -.3, card: 0 };
 const PITCH_X = -.98; // how far the sheet leans back when it is not laid flat
 const raw = (hex) => new Color().setHex(hex, LinearSRGBColorSpace); // shader colours stay in display space
-const TINT = { blank: raw(0x8a6a4c), writing: raw(C.blue), projects: raw(C.green), contact: raw(C.orange), card: raw(C.orange) };
+const TINT = { blank: raw(0x8a6a4c), name: raw(0x8a6a4c), bits: raw(0x8a6a4c), writing: raw(C.blue), projects: raw(C.green), contact: raw(C.orange), card: raw(C.orange) };
 
 const FLOOR_VERTEX = `varying vec2 vP; void main() { vP = position.xy; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.); }`;
 const FLOOR_FRAGMENT = `
@@ -179,6 +219,11 @@ export class Field {
     this.flat = { v: 0 }; this.home = { x: 0, y: 0 }; this.cardEl = null;
     this.name = 'blank';
     this.delay = FORMATIONS.blank.map((b) => ((b.x - LEFT) / W) * .45 + ((rowY(0) - b.y) / (PITCH * ROWS)) * .55);
+    // The name and the number are set left to right, as if typed; everything else sweeps across the sheet.
+    const typed = (f) => f.map((b, i) => (i === CURSOR ? 1 : Math.min(Math.max((b.x - LEFT) / W, 0), 1) * .86 + ((rowY(0) - b.y) / (PITCH * ROWS)) * .12));
+    this.delays = { name: typed(FORMATIONS.name), bits: typed(FORMATIONS.name) };
+    this.sweep = this.delay;
+    this.off = new Color(C.slab);
     this.progress = { t: 1 };
     this.pointer = { x: 0, y: 0, power: 0, tiltX: 0, tiltY: 0 };
     this.moveX = gsap.quickTo(this.pointer, 'x', { duration: .35, ease: 'power3.out' });
@@ -232,16 +277,17 @@ export class Field {
     gsap.to(this.pointer, { power: 1, tiltX: (clientY / h - .5) * .07 * tilt, tiltY: (clientX / w - .5) * .1 * tilt, duration: .6, ease: 'power2.out', overwrite: 'auto' });
   }
 
-  select(name = 'blank', duration = 1.15) {
+  select(name = 'blank', duration = 1.15, wait = 0) {
     if (name === this.name && name !== 'card') return;
     const changed = name !== this.name;
     this.name = name;
     this.state.forEach((s, i) => { Object.assign(this.from[i], { x: s.x, y: s.y, w: s.w, h: s.h, z: s.z }); this.from[i].col.copy(s.col); });
     this.to = this.formations[name];
+    this.delay = this.delays[name] ?? this.sweep;
     gsap.killTweensOf(this.progress);
     this.progress.t = 0;
     if (this.reduced) this.progress.t = 1;
-    else gsap.to(this.progress, { t: 1, duration, ease: 'none' });
+    else gsap.to(this.progress, { t: 1, duration, delay: wait, ease: 'none' });
     this.dirty = true;
     if (!changed) return;
     const tint = this.floor.material.uniforms.uTint.value, to = TINT[name];
@@ -299,7 +345,7 @@ export class Field {
       const arc = Math.sin(k * Math.PI) * 2.2;
       let depth = BLOCK_Z + (near * 7 + wave) * (1 - flat * .7) + arc;
       this.color.copy(s.col).lerp(this.hi, near * .6);
-      if (i === CURSOR && !this.reduced) this.color.lerp(colors[0], (Math.sin(this.time * 3.2) > .2 ? 0 : .75) * (this.name === 'blank' ? 1 : 0));
+      if (i === CURSOR && !this.reduced) this.color.lerp(this.off, (Math.sin(this.time * 3.2) > .2 ? 0 : .75) * (this.name === 'name' || this.name === 'bits' ? 1 : 0));
       const visible = s.w > .06;
       if (!visible) depth = .001;
       this.matrix.makeScale(Math.max(s.w, .001), visible ? s.h : .001, depth);

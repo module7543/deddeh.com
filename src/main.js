@@ -13,7 +13,11 @@ const SECTIONS = {
 };
 const WRITING_CARD = { accent: 'var(--orange)', statement: 'A few lines, and they come straight to me.', no: 'Fig. 3', figure: 'The postcard, laid flat to write on.' };
 let posted = null; // set once Formspree has acknowledged a message
-const IDLE = { accent: 'var(--orange)', statement: 'A personal site for essays, software, and whatever else holds my attention.', no: 'Fig. 0', figure: 'A ruled sheet. Move across it.' };
+// At rest the sheet carries the name, and the name reads two ways: as a word, and as the number it spells in hexadecimal.
+const NAME = { accent: 'var(--orange)', statement: 'I’m Sam Deddeh. Essays, software, and whatever else holds my attention.', no: 'Fig. 0', figure: 'The sheet, set as a name.', formation: 'name', flip: 'Read it as a number' };
+const NUMBER = { accent: 'var(--orange)', statement: 'Deddeh is also a number: DEDDE in hexadecimal, with the h that assembly uses to mark one.', no: 'Fig. 0x', figure: '912,862. One block a bit: 1101 1110 1101 1101 1110.', formation: 'bits', flip: 'Read it as a name' };
+const NUMBER_HASH = '#0xdedde';
+let IDLE = NAME;
 
 const root = document.documentElement;
 const toc = document.querySelector('.toc');
@@ -26,12 +30,14 @@ const marks = [...document.querySelectorAll('.marks span')];
 const index = document.querySelector('#index');
 const slot = document.querySelector('.sheet-slot');
 const again = document.querySelector('.lede-actions');
+const reading = document.querySelector('.reading');
 const contactItem = items.find((item) => item.dataset.section === 'contact');
 const motion = window.matchMedia('(prefers-reduced-motion: reduce)');
 const phone = window.matchMedia('(max-width: 820px)');
 let reduced = motion.matches;
 let pinned = null, hovered = null, focused = null, active = null;
 let field = null, swap = null, shown = IDLE;
+const rest = () => active?.dataset.section ?? IDLE.formation;
 
 // The active word opens along the width axis as far as its line allows.
 function fitWidths() {
@@ -57,7 +63,7 @@ function show(state) {
   shown = state;
   swap?.kill();
   root.style.setProperty('--accent', state.accent);
-  const write = () => { statement.textContent = state.statement; figureNo.textContent = state.no; figureText.textContent = state.figure; };
+  const write = () => { statement.textContent = state.statement; figureNo.textContent = state.no; figureText.textContent = state.figure; if (state.flip) reading.textContent = state.flip; };
   if (reduced) { write(); gsap.set([statement, figureText], { opacity: 1, y: 0, x: 0 }); return; }
   swap = gsap.timeline()
     .to([statement, figureText], { opacity: 0, duration: .14, ease: 'power1.in' })
@@ -72,7 +78,10 @@ function sync() {
   const next = open ? pinned : hovered ?? focused ?? pinned;
   const state = !next ? IDLE : next === contactItem && open ? WRITING_CARD : next === contactItem && posted ? posted : SECTIONS[next.dataset.section];
   again.hidden = state !== posted;
-  if (next === active) { show(state); if (!open) field?.select(active?.dataset.section ?? 'blank'); return; }
+  reading.hidden = state !== IDLE;
+  reading.setAttribute('aria-pressed', String(IDLE === NUMBER));
+  index.classList.toggle('is-idle', state === IDLE);
+  if (next === active) { show(state); if (!open) field?.select(rest()); return; }
   active = next;
   toc.classList.toggle('has-active', Boolean(active));
   for (const item of items) {
@@ -82,7 +91,16 @@ function sync() {
   }
   for (const mark of marks) mark.classList.toggle('is-on', mark.dataset.mark === active?.dataset.section);
   show(state);
-  if (!open) field?.select(active?.dataset.section ?? 'blank');
+  if (!open) field?.select(rest());
+}
+
+// The second reading of the name. Offered only while the sheet is at rest.
+function read(number, { writeURL = true } = {}) {
+  IDLE = number ? NUMBER : NAME;
+  if (writeURL && !pinned) {
+    try { history.replaceState(null, '', number ? NUMBER_HASH : location.pathname + location.search); } catch { /* restricted history */ }
+  }
+  sync();
 }
 
 function setForm(open, options) {
@@ -106,6 +124,7 @@ function pin(item, { writeURL = true, keyboard = false, focus = true } = {}) {
   sync();
 }
 function restore() {
+  if (location.hash.toLowerCase() === NUMBER_HASH) IDLE = NUMBER;
   pin(items.find((item) => item.dataset.section === location.hash.slice(1)) ?? null, { writeURL: false, focus: false });
 }
 
@@ -142,6 +161,9 @@ document.addEventListener('keydown', (event) => {
   if (event.key !== 'Escape' || !pinned) return;
   if (contact.isOpen) leaveContact(); else { hovered = null; pin(null); }
 });
+reading.addEventListener('click', () => read(IDLE === NAME));
+// The sheet itself answers a click or tap the same way; the button above is the keyboard's route.
+slot.addEventListener('click', () => { if (!active && !contact.isOpen) read(IDLE === NAME); });
 again.querySelector('.again').addEventListener('click', () => { posted = null; pin(contactItem, { keyboard: true }); });
 window.addEventListener('hashchange', restore);
 window.addEventListener('resize', fitWidths);
@@ -186,6 +208,7 @@ const stage = document.querySelector('.stage');
 import('./field.js').then(({ Field }) => {
   field = new Field(stage, slot, reduced);
   document.documentElement.classList.add('has-field');
-  if (contact.isOpen) contact.draw(); else field.select(active?.dataset.section ?? 'blank');
+  // The sheet opens ruled and empty, as it always has, and is then signed.
+  if (contact.isOpen) contact.draw(); else field.select(rest(), active ? 1.15 : 2.1, active || reduced ? 0 : .7);
 }).catch(() => stage.classList.add('is-fallback'));
 window.addEventListener('pagehide', (event) => { if (!event.persisted) field?.dispose(); });
