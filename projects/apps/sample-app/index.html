@@ -1,0 +1,72 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#141311" />
+    <meta name="description" content="A placeholder application showcase, set to test the design of Deddeh.com. Not a real application." />
+    <meta name="robots" content="noindex, nofollow" />
+    <title>Sample App (placeholder) · Deddeh.com</title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  </head>
+  <body>
+    <a class="skip-link" href="#room">Skip to the page</a>
+    <div class="stage" aria-hidden="true"></div>
+    <div class="grain" aria-hidden="true"></div>
+    <div class="shell">
+      <header class="top">
+        <a class="identity" href="../../../" aria-label="deddeh.com, home">deddeh.com<span class="caret" aria-hidden="true"></span></a>
+        <a class="return" href="../" data-room><span aria-hidden="true">←</span> <b>Apps</b></a>
+        <p class="marks" aria-hidden="true"><span data-mark="writing"></span><span data-mark="projects" class="is-on"></span><span data-mark="contact"></span></p>
+      </header>
+
+      <main id="room" data-view="app" data-tone="apps" tabindex="-1">
+        <article class="showcase">
+          <header class="show-head">
+            <!-- Remove this slug when the application is real. -->
+            <p class="slug"><span class="slug-mark" aria-hidden="true"></span>Sample <span class="slug-text">Placeholder showcase, set to test the design. Not a real application.</span></p>
+            <span class="lede-bar" aria-hidden="true"></span>
+            <p class="show-no">Apps · A01</p>
+            <h1>Sample <mark>App</mark></h1>
+            <p class="dek">One sentence on what the application is for stands here.</p>
+          </header>
+
+          <!-- Screens: one <figure class="shot"> each. data-label names its tab; the caption sits under the frame. -->
+          <section class="viewer" aria-label="Screens">
+            <div class="frame">
+              <figure class="shot" data-label="Overview"><img src="./screen-1.svg" width="1600" height="1000" alt="Placeholder screen: a sidebar, a heading, three tiles and a bar chart, drawn as blocks." /><figcaption>A caption for the first screen: what the visitor is looking at.</figcaption></figure>
+              <figure class="shot" data-label="Detail"><img src="./screen-2.svg" width="1600" height="1000" alt="Placeholder screen: a list on the left and a single record on the right, drawn as blocks." loading="lazy" /><figcaption>A caption for the second screen.</figcaption></figure>
+              <figure class="shot" data-label="On a phone"><img src="./screen-3.svg" width="640" height="1000" alt="Placeholder screen at phone size: a heading, two tiles and a list, drawn as blocks." loading="lazy" /><figcaption>Screens of any shape sit centred in the same frame.</figcaption></figure>
+            </div>
+          </section>
+
+          <div class="show-body">
+            <section class="about" aria-labelledby="about-title">
+              <h2 id="about-title">What it does</h2>
+              <p>This paragraph stands in for a short description of the application: the problem it was made for, and what it is like to use.</p>
+              <p>A second paragraph can say how it was built, or what makes it personal. Two short paragraphs are about as much as the page needs.</p>
+            </section>
+
+            <dl class="spec">
+              <div><dt>Status</dt><dd>Placeholder</dd></div>
+              <div><dt>Runs on</dt><dd>Placeholder</dd></div>
+              <div><dt>Made with</dt><dd>Placeholder</dd></div>
+            </dl>
+
+            <!-- Access. Private: the note below. Public: replace the note with one link, <a class="open" href="https://…">Open the app</a>. -->
+            <aside class="access" aria-labelledby="access-title">
+              <h2 id="access-title">Access</h2>
+              <p class="access-state"><span class="lock" aria-hidden="true"></span>Private</p>
+              <p>This is how a private application reads. It runs for its owner only: no source code, data or live instance is linked from this page.</p>
+              <p class="access-ask">Curious about it, or about a version of your own? <a href="../../../#contact">Write to me</a>.</p>
+            </aside>
+          </div>
+        </article>
+
+        <p class="figure"><span class="figure-caption"><span class="figure-no">Fig. 2a</span><span class="figure-text">The window, laid flat to look through.</span></span></p>
+      </main>
+
+    </div>
+    <script type="module" src="/src/projects.js"></script>
+  </body>
+</html>

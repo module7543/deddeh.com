@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#141311" />
+    <meta name="description" content="A placeholder track page, set to test the design of Deddeh.com. Not a recording by Sam Deddeh." />
+    <meta name="robots" content="noindex, nofollow" />
+    <title>Sample Track (placeholder) · Deddeh.com</title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  </head>
+  <body>
+    <a class="skip-link" href="#room">Skip to the page</a>
+    <div class="stage" aria-hidden="true"></div>
+    <div class="grain" aria-hidden="true"></div>
+    <div class="shell">
+      <header class="top">
+        <a class="identity" href="../../../" aria-label="deddeh.com, home">deddeh.com<span class="caret" aria-hidden="true"></span></a>
+        <a class="return" href="../" data-room><span aria-hidden="true">←</span> <b>Music</b></a>
+        <p class="marks" aria-hidden="true"><span data-mark="writing"></span><span data-mark="projects" class="is-on"></span><span data-mark="contact"></span></p>
+      </header>
+
+      <main id="room" data-view="track" data-tone="music" tabindex="-1">
+        <!-- The source of the sound, one of: data-src="./file.mp3" (a file kept beside this page), data-suno="song id" (Suno's own player), or neither (a labelled test signal). -->
+        <article class="listen" data-track="sample-track" data-length="24">
+          <header class="listen-head">
+            <!-- Remove this slug when the track is real. -->
+            <p class="slug"><span class="slug-mark" aria-hidden="true"></span>Sample <span class="slug-text">Placeholder track, set to test the design. Not a recording by Sam Deddeh.</span></p>
+            <span class="lede-bar" aria-hidden="true"></span>
+            <p class="show-no">Music · 01</p>
+            <h1>Sample Track</h1>
+            <p class="dek">A line about the song stands here.</p>
+          </header>
+
+          <div class="sheet-slot" aria-hidden="true"></div>
+
+          <section class="player" aria-label="Player">
+            <noscript><p class="source-note">The player needs JavaScript.</p></noscript>
+          </section>
+
+          <nav class="tracks" aria-label="More tracks">
+            <a class="track-step" href="../second-sample/" data-room rel="next"><span class="track-step-label">Next</span><span class="track-step-no" aria-hidden="true">02</span><span class="track-step-title">Second Sample</span></a>
+          </nav>
+        </article>
+
+        <p class="figure"><span class="figure-caption" aria-hidden="true"><span class="figure-no">Fig. 2b</span><span class="figure-text">The score is drawn from the track’s name. The cursor keeps time.</span></span></p>
+      </main>
+
+    </div>
+    <script type="module" src="/src/projects.js"></script>
+  </body>
+</html>
