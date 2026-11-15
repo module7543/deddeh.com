@@ -1,8 +1,9 @@
-// The sheet: one set of blocks standing in for unwritten text. Each section
-// re-typesets the same blocks: ruled blank lines, paragraphs, code, loose notes.
+// One scene: a ruled, softly lit floor and a sheet of blocks standing on it.
+// Each section re-typesets the same blocks: a ruled sheet, prose with marginalia,
+// code, a postcard. The floor's light takes the section's colour.
 import {
-  BoxGeometry, BufferAttribute, Color, Group, InstancedMesh, Matrix4, MeshBasicMaterial,
-  OrthographicCamera, Scene, Vector3, WebGLRenderer,
+  BoxGeometry, BufferAttribute, Color, Group, InstancedMesh, LinearSRGBColorSpace, Matrix4, Mesh,
+  MeshBasicMaterial, OrthographicCamera, PlaneGeometry, Scene, ShaderMaterial, Vector3, WebGLRenderer,
 } from 'three';
 import { gsap } from 'gsap';
 
@@ -32,16 +33,22 @@ const hide = (base, i) => ({ ...base[i], w: 0, z: 0 });
 
 function writing() {
   const base = blank(), out = [], rand = rng(11);
-  const limits = [.42, 0, 1, 1, 1, 1, .58, 0, 1, 1, 1, 1, 1, .34];
+  const limits = [.4, 0, .78, .78, .78, .78, .46, 0, .78, .78, .78, .78, .78, .28];
+  const margin = { 3: [9, C.teal], 4: [6, C.text], 9: [11, C.orange], 10: [8, C.text], 11: [5, C.text] };
   let end = { x: LEFT, y: rowY(ROWS - 1) };
   for (let r = 0; r < ROWS; r++) {
     let x = LEFT;
     for (let c = 0; c < COLS; c++) {
       const i = r * COLS + c;
+      if (c === COLS - 1 && margin[r]) { // a note in the margin, raised off the sheet
+        const [w, color] = margin[r];
+        out.push({ x: LEFT + W * .86 + w / 2, y: rowY(r), w, z: 3.2, c: color });
+        continue;
+      }
       const w = r === 0 ? 9 + rand() * 9 : 4 + rand() * 9.5;
-      if (x + w > LEFT + W * limits[r] + .01) { out.push(hide(base, i)); continue; }
+      if (c === COLS - 1 || x + w > LEFT + W * limits[r] + .01) { out.push(hide(base, i)); continue; }
       const roll = rand();
-      const color = r === 0 ? C.ink : roll < .13 ? C.blue : roll < .17 ? C.orange : C.text;
+      const color = r === 0 ? C.ink : roll < .13 ? C.blue : roll < .16 ? C.violet : C.text;
       out.push({ x: x + w / 2, y: rowY(r), w, z: 0, c: color });
       x += w + 1.5;
       if (r === ROWS - 1) end = { x, y: rowY(r) };
@@ -75,41 +82,66 @@ function projects() {
   return out;
 }
 
-function notes() {
-  const base = blank(), out = [], rand = rng(5);
-  const cards = [
-    { x: -50, r: 0, w: 30, lines: 3, z: 0, c: C.orange }, { x: -8, r: 1, w: 24, lines: 4, z: 5, c: C.teal },
-    { x: 26, r: 0, w: 24, lines: 2, z: 0, c: C.ink }, { x: -44, r: 5, w: 22, lines: 4, z: 5, c: C.blue },
-    { x: -12, r: 7, w: 34, lines: 3, z: 0, c: C.orange }, { x: 30, r: 4, w: 20, lines: 5, z: 9, c: C.teal },
-    { x: -46, r: 11, w: 26, lines: 2, z: 0, c: C.ink }, { x: 22, r: 11, w: 28, lines: 3, z: 4, c: C.orange },
-  ];
-  let end = { x: 0, y: 0, z: 0 };
-  for (const card of cards) {
-    for (let l = 0; l < card.lines; l++) {
-      let x = card.x;
-      const count = l === 0 ? 1 : 1 + Math.floor(rand() * 2.6);
-      for (let k = 0; k < count; k++) {
-        const w = l === 0 ? card.w * (.45 + rand() * .3) : Math.min(card.x + card.w - x, 4 + rand() * 10);
-        if (w < 2.5) break;
-        out.push({ x: x + w / 2, y: rowY(card.r + l), w, z: card.z, c: l === 0 ? card.c : C.text });
-        x += w + 1.5;
-        end = { x, y: rowY(card.r + l), z: card.z };
-      }
+// A postcard: message on the left, a divider, then stamp, postmark and address lines.
+function contact() {
+  const base = blank(), rand = rng(41);
+  const out = base.map((b, i) => (i < COLS || i >= (ROWS - 1) * COLS ? { ...b, c: C.dim } : hide(base, i)));
+  const put = (r, c, x, w, color, z = 0) => { out[r * COLS + c] = { x: x + w / 2, y: rowY(r), w, z, c: color }; return x + w + 1.5; };
+  const message = { 2: [.2], 4: [.44], 5: [.44], 6: [.44], 7: [.3], 9: [.16], 10: [.24] };
+  let end = { x: LEFT, y: rowY(10) };
+  for (let r = 1; r < ROWS - 1; r++) {
+    put(r, 5, -.7, 1.4, C.dim);
+    if (!message[r]) continue;
+    let x = LEFT + 3;
+    for (let c = 0; c < 5; c++) {
+      const w = r === 2 || r >= 9 ? 9 + rand() * 6 : 4.5 + rand() * 8;
+      if (x + w > LEFT + W * message[r][0] + 3) break;
+      x = put(r, c, x, w, r === 2 ? C.ink : r === 10 ? C.blue : C.text, r === 10 ? 1.2 : 0);
+      if (r === 10) end = { x, y: rowY(r) };
     }
   }
-  while (out.length < CURSOR) out.push(hide(base, out.length));
-  out.push({ x: end.x + 1.3, y: end.y, w: 2.6, z: end.z + 1.6, c: C.orange });
+  put(2, 9, 38, 8, C.orange, 2.6); put(3, 9, 38, 8, C.orange, 2.6); // the stamp
+  put(2, 8, 22, 12, C.teal, .7); put(3, 8, 25, 12, C.teal, .7); put(4, 8, 22, 12, C.teal, .7); // the postmark
+  put(7, 6, 8, 22, C.ink); put(7, 7, 31.5, 9, C.text);
+  put(9, 6, 8, 30, C.text);
+  put(11, 6, 8, 14, C.text); put(11, 7, 23.5, 7, C.text);
+  out[CURSOR] = { x: end.x + 1.3, y: end.y, w: 2.6, z: 1.4, c: C.orange };
   return out;
 }
 
-const FORMATIONS = { blank: blank(), writing: writing(), projects: projects(), notes: notes() };
-const SPIN = { blank: -.4, writing: -.34, projects: -.46, notes: -.28 };
+const FORMATIONS = { blank: blank(), writing: writing(), projects: projects(), contact: contact() };
+const SPIN = { blank: -.4, writing: -.34, projects: -.46, contact: -.3 };
+const raw = (hex) => new Color().setHex(hex, LinearSRGBColorSpace); // shader colours stay in display space
+const TINT = { blank: raw(0x8a6a4c), writing: raw(C.blue), projects: raw(C.green), contact: raw(C.orange) };
+
+const FLOOR_VERTEX = `varying vec2 vP; void main() { vP = position.xy; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.); }`;
+const FLOOR_FRAGMENT = `
+precision highp float;
+uniform vec3 uBg, uTint, uPointer;
+varying vec2 vP;
+float rule(float v, float cell) {
+  float d = abs(fract(v / cell + .5) - .5) * cell;
+  return 1. - smoothstep(0., fwidth(v) * 1.2, d);
+}
+void main() {
+  vec2 q = vP / vec2(80., 62.);
+  float r2 = dot(q, q);
+  float pool = exp(-r2 * .95), reach = exp(-r2 * .3);
+  vec2 d = vP - uPointer.xy;
+  float spot = uPointer.z * exp(-dot(d, d) / 1100.);
+  float grid = max(rule(vP.y, ${PITCH.toFixed(2)}), rule(vP.x, ${(W / COLS).toFixed(2)}));
+  vec3 col = uBg * (.7 + .3 * reach);
+  col += uTint * (.1 * pool + .045 * spot);
+  col += mix(vec3(.93, .9, .85), uTint, .45) * grid * (.008 + .085 * reach + .14 * spot);
+  gl_FragColor = vec4(col, 1.);
+}`;
 const ease = (t) => (t < .5 ? 4 * t * t * t : 1 - ((-2 * t + 2) ** 3) / 2);
 
 export class Field {
   constructor(stage, slot, reducedMotion) {
     this.stage = stage; this.slot = slot; this.reduced = reducedMotion;
-    this.renderer = new WebGLRenderer({ antialias: true, alpha: true, powerPreference: 'low-power' });
+    this.renderer = new WebGLRenderer({ antialias: true, powerPreference: 'low-power' });
+    this.renderer.setClearColor(0x141311);
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
     stage.append(this.renderer.domElement);
     this.scene = new Scene();
@@ -129,7 +161,14 @@ export class Field {
     geometry.setAttribute('color', new BufferAttribute(shade, 3));
     this.mesh = new InstancedMesh(geometry, new MeshBasicMaterial({ vertexColors: true }), N);
     this.mesh.frustumCulled = false;
-    this.group.add(this.mesh);
+    this.floor = new Mesh(new PlaneGeometry(8000, 8000), new ShaderMaterial({
+      vertexShader: FLOOR_VERTEX, fragmentShader: FLOOR_FRAGMENT,
+      uniforms: { uBg: { value: raw(0x141311) }, uTint: { value: TINT.blank.clone() }, uPointer: { value: new Vector3() } },
+    }));
+    this.shadows = new InstancedMesh(new PlaneGeometry(1, 1), new MeshBasicMaterial({ color: 0x0b0a09 }), N);
+    this.shadows.frustumCulled = false;
+    this.shadows.position.z = .04;
+    this.group.add(this.floor, this.shadows, this.mesh);
 
     this.state = FORMATIONS.blank.map((b) => ({ ...b, col: new Color(b.c) }));
     this.from = this.state.map((b) => ({ ...b, col: b.col.clone() }));
@@ -169,10 +208,10 @@ export class Field {
     this.camera.updateProjectionMatrix();
     const slot = this.slot.getBoundingClientRect();
     const narrow = w <= 820;
-    const scale = narrow ? Math.min((w * .9) / W, (slot.height * 1.25) / (ROWS * PITCH * .62)) : Math.min((slot.width * 1.75) / W, (h * .9) / (ROWS * PITCH * .62));
+    const scale = narrow ? Math.min((w * .84) / W, (slot.height * 1.3) / (ROWS * PITCH * .62)) : Math.min((slot.width * 1.04) / W, (h * .95) / (ROWS * PITCH * .62));
     this.group.scale.setScalar(scale);
-    const cx = narrow ? w * .56 : slot.left + slot.width * .4;
-    const cy = slot.top + slot.height * (narrow ? .6 : .58);
+    const cx = narrow ? w * .5 : slot.left + slot.width * .5;
+    const cy = slot.top + slot.height * (narrow ? .56 : .41);
     this.group.position.set(cx - w / 2, h / 2 - cy, 0);
     this.dirty = true;
   }
@@ -199,6 +238,8 @@ export class Field {
     this.progress.t = 0;
     if (this.reduced) this.progress.t = 1;
     else gsap.to(this.progress, { t: 1, duration: 1.15, ease: 'none' });
+    const tint = this.floor.material.uniforms.uTint.value, to = TINT[name];
+    gsap.to(tint, { r: to.r, g: to.g, b: to.b, duration: this.reduced ? 0 : 1.1, ease: 'power2.out', overwrite: 'auto' });
     gsap.to(this.group.rotation, { z: SPIN[name], duration: this.reduced ? 0 : 1.3, ease: 'power3.inOut', overwrite: 'auto' });
     this.dirty = true;
   }
@@ -208,7 +249,7 @@ export class Field {
   frame(delta) {
     if (!this.visible) return;
     const p = this.pointer;
-    const moving = this.progress.t < 1 || p.power > .002 || gsap.isTweening(this.group.rotation);
+    const moving = this.progress.t < 1 || p.power > .002 || gsap.isTweening(this.group.rotation) || gsap.isTweening(this.floor.material.uniforms.uTint.value);
     if (this.reduced && !moving && !this.dirty) return;
     this.dirty = false;
     this.time += delta / 1000;
@@ -216,6 +257,7 @@ export class Field {
     const spread = .8, T = this.progress.t * (1 + spread);
     this.group.rotation.x = -.98 + p.tiltX;
     this.group.rotation.y = p.tiltY;
+    this.floor.material.uniforms.uPointer.value.set(p.x, p.y, p.power);
     for (let i = 0; i < N; i++) {
       const a = this.from[i], b = this.to[i], s = this.state[i];
       const k = ease(Math.min(Math.max(T - this.delay[i] * spread, 0), 1));
@@ -235,7 +277,13 @@ export class Field {
       this.matrix.setPosition(s.x, s.y, s.z + depth / 2);
       this.mesh.setMatrixAt(i, this.matrix);
       this.mesh.setColorAt(i, this.color);
+      // The shadow runs from the block's footprint away from the light; taller and higher blocks cast further.
+      const fall = visible ? (s.z + depth) * .62 : 0, lift = visible ? s.z * .62 : 0;
+      this.matrix.makeScale(visible ? s.w + fall - lift : .001, visible ? BLOCK_H + fall - lift : .001, 1);
+      this.matrix.setPosition(s.x + (fall + lift) / 2, s.y - (fall + lift) / 2, 0);
+      this.shadows.setMatrixAt(i, this.matrix);
     }
+    this.shadows.instanceMatrix.needsUpdate = true;
     this.mesh.instanceMatrix.needsUpdate = true;
     this.mesh.instanceColor.needsUpdate = true;
     this.renderer.render(this.scene, this.camera);
@@ -248,7 +296,7 @@ export class Field {
     window.removeEventListener('resize', this.onResize);
     document.removeEventListener('visibilitychange', this.onVisibility);
     this.observer.disconnect();
-    this.mesh.geometry.dispose(); this.mesh.material.dispose(); this.renderer.dispose();
+    for (const m of [this.mesh, this.shadows, this.floor]) { m.geometry.dispose(); m.material.dispose(); } this.renderer.dispose();
     this.renderer.domElement.remove();
   }
 }

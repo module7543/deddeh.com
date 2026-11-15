@@ -23,32 +23,32 @@ try {
     await page.evaluate(() => document.fonts.ready);
     const writing = page.getByRole('button', { name: /Writing/ });
     const projects = page.getByRole('button', { name: /Projects/ });
-    const notes = page.getByRole('button', { name: /Notes/ });
-    const readout = page.locator('.readout-text');
-    await expect(readout).toHaveText('Unwritten');
+    const contact = page.getByRole('button', { name: /Contact/ });
+    const figure = page.locator('.figure-no');
+    await expect(figure).toHaveText('Fig. 0');
     if (mobile) await writing.tap(); else await writing.click();
     await expect(writing).toHaveAttribute('aria-pressed', 'true');
-    await expect(readout).toHaveText('Writing');
+    await expect(figure).toHaveText('Fig. 1');
     await projects.click();
     await expect(writing).toHaveAttribute('aria-pressed', 'false');
-    await expect(readout).toHaveText('Projects');
-    await notes.focus();
-    await notes.press('Enter');
-    await expect(page.locator('.detail')).toContainText('Notes');
-    await notes.press('Escape');
-    await expect(notes).toHaveAttribute('aria-pressed', 'false');
+    await expect(figure).toHaveText('Fig. 2');
+    await contact.focus();
+    await contact.press('Enter');
+    await expect(page.locator('.statement')).toContainText('correspondence');
+    await contact.press('Escape');
+    await expect(contact).toHaveAttribute('aria-pressed', 'false');
     await writing.focus();
     await writing.press('ArrowDown');
     await expect(projects).toBeFocused();
     assert(await page.evaluate(() => document.documentElement.scrollWidth <= document.documentElement.clientWidth), 'No horizontal overflow');
     if (!mobile) {
       await page.mouse.move(700, 600);
-      await notes.hover();
-      await expect(notes).toHaveClass(/is-active/);
+      await contact.hover();
+      await expect(contact).toHaveClass(/is-active/);
     }
     await page.waitForTimeout(1500);
     await page.screenshot({ path: `artifacts/pages-${mobile ? 'mobile' : 'desktop'}.png`, fullPage: true });
-    console.log(`PASS ${mobile ? 'mobile touch/reduced motion' : 'desktop hover/keyboard'}: HTTP 200, assets, pin/unpin, readout, Escape, arrow navigation, no overflow — ${url}`);
+    console.log(`PASS ${mobile ? 'mobile touch/reduced motion' : 'desktop hover/keyboard'}: HTTP 200, assets, pin/unpin, statement and figure, Escape, arrow navigation, no overflow — ${url}`);
     await context.close();
   }
   assert.deepEqual(failures, [], 'No failed assets or JavaScript page errors');
