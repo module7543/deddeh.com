@@ -127,7 +127,39 @@ html:not(.has-field) .tab[aria-pressed='true'] { border-bottom-color: var(--acce
 .track-step-title { font: italic 400 25px/1.1 var(--serif); text-decoration: underline; text-decoration-color: transparent; text-decoration-thickness: 1px; text-underline-offset: 5px; transition: text-decoration-color .2s; }
 .track-step:hover .track-step-title, .track-step:focus-visible .track-step-title { text-decoration-color: var(--accent); }
 
+
+/* The lyrics sit at the lower-right of a real recording's score; the score remains visible. */
+.song-source { margin: 13px 0 0; font: 400 13px/1.5 var(--mono); }
+.song-source a { color: var(--violet); text-decoration: underline; text-decoration-color: transparent; text-underline-offset: 5px; }
+.song-source a:hover, .song-source a:focus-visible { text-decoration-color: currentColor; }
+.lyrics-panel {
+  grid-column: 2; grid-row: 3; align-self: end; justify-self: end;
+  position: relative; z-index: 2; width: min(100%, 365px); min-width: 0;
+  padding: 16px 18px 12px; background: rgba(20,19,17,.9);
+  border: 1px solid #3d3940; border-top: 3px solid var(--violet);
+  box-shadow: 0 16px 45px rgba(0,0,0,.24);
+}
+.lyrics-heading { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+.lyrics-label { font: 500 12px/1.4 var(--mono); letter-spacing: .04em; color: var(--ink); }
+.lyrics-label span { color: var(--violet); }
+.lyrics-hint { font: 400 11px/1.4 var(--mono); color: var(--muted); white-space: nowrap; }
+.lyrics-scroll {
+  max-height: clamp(155px, 23vh, 255px); overflow-y: auto; overscroll-behavior: contain;
+  margin: 10px 0 8px; padding: 4px 10px 3px 0;
+  scrollbar-width: thin; scrollbar-color: #6e606f transparent;
+}
+.lyrics-scroll:focus-visible { outline: 2px solid var(--violet); outline-offset: 4px; }
+.lyrics-verse { margin: 0 0 19px; font: italic 400 clamp(19px,1.55vw,24px)/1.33 var(--serif); color: var(--ink); }
+.lyrics-verse:last-child { margin-bottom: 5px; }
+.lyrics-verse span { display: block; }
+.lyrics-caption { border-top: 1px solid var(--rule); padding-top: 9px; color: var(--muted); font: 400 11px/1.45 var(--mono); }
+
 @media (max-width: 820px) {
+  .lyrics-panel { grid-column: 1; grid-row: 4; justify-self: stretch; width: 100%; margin-top: 24px; }
+  #room[data-view='track']:has(.lyrics-panel) { grid-template-rows: auto minmax(34svh,1fr) auto auto auto auto; }
+  #room[data-view='track']:has(.lyrics-panel) .tracks { grid-row: 5; }
+  #room[data-view='track']:has(.lyrics-panel) > .figure { grid-row: 6; }
+
   .return { font-size: 13px; }
   #room[data-view='shelf'] { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto minmax(30svh, 1fr) auto auto; padding-top: 24px; }
   #room[data-view='shelf'] .statement { min-height: 0; }
