@@ -1,7 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { createHash } from 'node:crypto';
 import { describe, it, expect } from 'vitest';
-import { cueAt, frameAt, validateAnalysis, validateLyrics } from '../src/listening-data.js';
+import { cueAt, frameAt, validateAnalysis, validateLyrics, characterOf } from '../src/listening-data.js';
 import { spectralSheet } from '../src/field.js';
 const analysis = JSON.parse(readFileSync('public/music/sweet-on-my-tongue.analysis.json'));
 const lyrics = JSON.parse(readFileSync('public/music/sweet-on-my-tongue.lyrics.json'));
@@ -46,8 +46,31 @@ describe('The recording and its timed data', () => {
     const a = spectralSheet(analysis), b = spectralSheet(silent);
     expect(a).toHaveLength(141);
     expect(a.spectral).toBe(true);
-    expect(a[35].z).toBeGreaterThan(b[35].z);
+    const fragments = a.slice(0, 140).filter(block => block.w > 0);
+    expect(fragments.length).toBeGreaterThan(7);
+    expect(fragments.length).toBeLessThan(100);
+    expect(b.slice(0, 140).every(block => block.w === 0)).toBe(true);
+    expect(fragments.some(block => block.w > 10)).toBe(true);
+    expect(a.slice(0, 140).every(block => Number.isFinite(block.band))).toBe(true);
     expect(new Set(a.slice(0,140).map(block => block.band)).size).toBe(7);
+  });
+  it('measures a character from any recording, so different music is lit and answered differently', () => {
+    const held = { frames: Array.from({ length: 400 }, (_, i) => [150 + 10 * Math.sin(i / 60), 0, 20, 30, 60, 120, 160, 180, 170]) };
+    const struck = { frames: Array.from({ length: 400 }, (_, i) => (i % 10 < 2 ? [240, 200, 250, 200, 100, 80, 60, 40, 30] : [60, 0, 90, 60, 30, 20, 10, 5, 5])) };
+    const a = characterOf(held), b = characterOf(struck), song = characterOf(analysis);
+    expect(a.motion).toBeLessThan(.1); expect(b.motion).toBeGreaterThan(.6);
+    expect(a.tilt).toBeGreaterThan(.3); expect(b.tilt).toBeLessThan(-.3);
+    expect(a.fall).toBeGreaterThan(b.fall); expect(a.rise).toBeGreaterThan(b.rise);
+    for (const c of [a, b, song]) for (const v of Object.values(c)) expect(Number.isFinite(v)).toBe(true);
+    expect(song.motion).toBeGreaterThan(a.motion); expect(song.motion).toBeLessThan(b.motion);
+    expect(Math.abs(song.tilt)).toBeLessThan(.3);
+    expect(characterOf({ frames: [[0, 0, 0, 0, 0, 0, 0, 0, 0]] }).tilt).toBe(0); // silence divides nothing by zero
+  });
+  it('lists the recording in the collection with its own analysis, and keeps the song page generic', () => {
+    const shelf = readFileSync('projects/music/index.html', 'utf8'), song = readFileSync('projects/music/sweet-on-my-tongue/index.html', 'utf8');
+    expect(shelf).toMatch(/href="\.\/sweet-on-my-tongue\/"[^>]*data-analysis="\.\.\/\.\.\/music\/sweet-on-my-tongue\.analysis\.json"/);
+    expect(shelf).toContain('aria-labelledby="recordings-label"');
+    expect(song).not.toMatch(/class="tracks"/); // neighbours are read from the collection, never written by hand
   });
   it('rejects invalid data instead of feeding NaNs into the scene or the media clock', () => {
     expect(() => validateLyrics({ cues: [{text:'x',start:4,end:3}] })).toThrow();

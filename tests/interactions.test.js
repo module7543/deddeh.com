@@ -218,7 +218,7 @@ describe('Projects and its collections', () => {
       expect(a.getAttribute('href')).toBe(`./projects/${a.dataset.collection}/`);
       const page = read(`projects/${a.dataset.collection}/index.html`);
       expect(page.querySelector('#room').dataset.view).toBe('shelf');
-      expect(page.querySelector('.rooms .is-active .word-text').textContent).toBe(a.querySelector('.essay-title').textContent);
+      expect(page.querySelector('.rooms .is-active .word-text, .music-heading h1').textContent).toContain(a.querySelector('.essay-title').textContent);
       expect(page.querySelector('.return').getAttribute('href')).toBe('../../#projects');
     }
   });
@@ -227,7 +227,7 @@ describe('Projects and its collections', () => {
     item('projects').dispatchEvent(new MouseEvent('click', { bubbles: true, detail: 1 }));
     mouse(link('music'), 'pointermove');
     expect($('.figure-no').textContent).toBe('Fig. 2b');
-    expect($('.statement').textContent).toContain('Suno');
+    expect($('.statement').textContent).toBe('Recordings, to spend time with.');
     mouse(link('music'), 'pointerleave');
     expect($('.figure-no').textContent).toBe('Fig. 2');
     link('apps').focus();

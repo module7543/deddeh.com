@@ -19,35 +19,27 @@
         <p class="marks" aria-hidden="true"><span data-mark="writing"></span><span data-mark="projects" class="is-on"></span><span data-mark="contact"></span></p>
       </header>
 
-      <main id="room" data-view="shelf" data-tone="music" data-formation="music" tabindex="-1">
-        <h1 class="sr-only">Music, a collection in Projects</h1>
-
-        <div class="lede">
-          <span class="lede-bar" aria-hidden="true"></span>
-          <p class="statement">Songs, to listen to here.</p>
-        </div>
+      <main id="room" class="music-collection" data-view="shelf" data-tone="music" data-formation="music" tabindex="-1">
+        <header class="music-heading">
+          <p class="music-kicker"><span>Sam Deddeh</span><span>Recordings / 2b</span></p>
+          <h1>Music<span class="music-period">.</span></h1>
+          <p class="music-intro">Something to spend time with.</p>
+        </header>
 
         <div class="sheet-slot" aria-hidden="true"></div>
 
-        <!-- The collections. To add one: a word here on every collection page, a folder under projects/, and a row on the homepage. -->
-        <nav class="toc rooms" aria-label="Collections">
-          <ol>
-            <li>
-              <a class="toc-item" href="../apps/" data-room><span class="num" aria-hidden="true">2a</span><span class="word"><span class="word-text">Apps</span></span></a>
-            </li>
-            <li>
-              <a class="toc-item is-active" aria-current="page" href="./" data-room><span class="num" aria-hidden="true">2b</span><span class="word"><span class="word-text">Music</span></span></a>
-              <!-- One row per track, in the order they should be heard. -->
-              <div class="shelf">
-                <ol class="setlist">
-                  <li><a class="entry" href="./sweet-on-my-tongue/" data-room><span class="entry-no" aria-hidden="true">01</span><span class="entry-name">Sweet on My Tongue</span><span class="entry-time">3:26</span></a></li>
-                </ol>
-              </div>
-            </li>
+        <section class="music-catalog" aria-labelledby="recordings-label">
+          <div class="catalog-heading"><h2 id="recordings-label">The recordings</h2><span>Choose a song to listen</span></div>
+          <!-- One entry per recording. The order also supplies previous / next navigation. -->
+          <ol class="setlist">
+            <li><a class="entry" href="./sweet-on-my-tongue/" data-room data-analysis="../../music/sweet-on-my-tongue.analysis.json"><span class="entry-no" aria-hidden="true">01</span><span class="entry-name">Sweet on My Tongue</span><span class="entry-time">3:26</span><span class="entry-go" aria-hidden="true">↗</span><span class="entry-invitation" aria-hidden="true">Listen &amp; follow the lyrics</span></a></li>
           </ol>
-        </nav>
+        </section>
 
-        <p class="figure"><span class="figure-caption" aria-hidden="true"><span class="figure-no">Fig. 2b</span><span class="figure-text">The sheet, set as a score.</span></span></p>
+        <footer class="music-foot">
+          <p class="figure"><span class="figure-caption" aria-hidden="true"><span class="figure-no">Fig. 2b</span><span class="figure-text">A study in sound.</span></span></p>
+          <a href="../apps/" data-room class="music-sibling">Elsewhere / Apps <span aria-hidden="true">↗</span></a>
+        </footer>
       </main>
 
     </div>

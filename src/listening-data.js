@@ -17,3 +17,20 @@ export function validateLyrics(data) {
   if (!Array.isArray(data.cues) || !data.cues.length || data.cues.some((c, i) => !c.text || !Number.isInteger(c.stanza) || c.stanza < 0 || !Number.isFinite(c.start) || !Number.isFinite(c.end) || c.start < 0 || c.end <= c.start || (i && c.start < data.cues[i - 1].end))) throw new Error('Invalid lyric timing');
   return data;
 }
+// What a recording is like, measured from the analysis it already has. Every column is scaled to the recording's
+// own peaks, so these compare a recording with itself: how full it stays (sustain), how much it changes from one
+// frame to the next (motion), and which end of the spectrum it spends more of its time in (tilt, -1 low to 1 high).
+// They tune light and response only. Nothing here picks a design for a track.
+export function characterOf(data) {
+  const n = data.frames.length;
+  let level = 0, change = 0, low = 0, high = 0;
+  data.frames.forEach((f, i) => {
+    level += f[0];
+    if (i) change += Math.abs(f[0] - data.frames[i - 1][0]);
+    low += f[2] + f[3] + f[4]; high += f[6] + f[7] + f[8];
+  });
+  const sustain = level / n / 255, motion = clamp(change / Math.max(n - 1, 1) / 255 / .2, 0, 1);
+  const tilt = low + high ? (high - low) / (low + high) : 0;
+  // A recording that moves a lot is answered quickly; one that holds is answered slowly. Seconds, as time constants.
+  return { sustain, motion, tilt, rise: .03 + (1 - motion) * .09, fall: .14 + (1 - motion) * .5 };
+}
