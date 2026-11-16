@@ -9,7 +9,7 @@ import '@fontsource/ibm-plex-mono/latin-500.css';
 import './style.css';
 import './projects.css';
 import { gsap } from 'gsap';
-import { listening, drawPlate } from './listening.js';
+import { listening } from './listening.js';
 import { validateAnalysis } from './listening-data.js';
 
 const root = document.documentElement;
@@ -39,18 +39,17 @@ function shelf(page) {
     other.addEventListener('pointerenter', (event) => { if (event.pointerType === 'mouse') peek(name); });
     other.addEventListener('pointerleave', (event) => { if (event.pointerType === 'mouse') peek(formation); });
   }
-  // Music: every recording in the list is shown as its plate, the seven measured bands across its length.
-  // The list draws it flat, as a stamp; the sheet raises the same plate for the recording that is chosen
-  // (the first, until another is pointed at or focused). The score stands only until a plate has been read.
-  const entries = [...page.querySelectorAll('.entry[data-analysis]')], plates = new Map(), caption = page.querySelector('.figure-text');
-  let shown = null, dead = false;
+  // Preview the focused recording in the shared scene; each analysis makes its own
+  // open formation. The collection stays typographic rather than repeating a chart.
+  const entries = [...page.querySelectorAll('.entry[data-analysis]')], analyses = new Map(), failed = new Set(), caption = page.querySelector('.figure-text');
+  let shown = null, wanted = entries[0], dead = false;
   const nameOf = (entry) => `recording:${entry.getAttribute('href').replace(/^\.\/|\/$/g, '')}`;
   function raise(entry, duration) {
-    const data = plates.get(entry), known = field?.has(nameOf(entry)); // known: raised on an earlier visit to this page
+    const data = analyses.get(entry), known = field?.has(nameOf(entry)); // known: raised on an earlier visit to this page
     if ((!data && !known) || dead) return;
     shown = entry;
     entries.forEach((other) => other.classList.toggle('is-shown', other === entry));
-    if (caption) caption.textContent = `${entry.querySelector('.entry-name').textContent}, as a plate: seven bands, start to end.`;
+    if (caption) caption.textContent = `${entry.querySelector('.entry-name').textContent} · A study in sound.`;
     if (!field || !sheet || busy) return;
     if (!known) field.define(nameOf(entry), sheet.spectralSheet(data), 'music');
     field.setCharacter(null); field.select(nameOf(entry), duration);
@@ -60,12 +59,15 @@ function shelf(page) {
       .then((response) => { if (!response.ok) throw new Error(String(response.status)); return response.json(); })
       .then((data) => {
         if (dead) return;
-        plates.set(entry, validateAnalysis(data));
-        const stamp = entry.querySelector('.entry-plate');
-        if (stamp) drawPlate(stamp, data, 64);
-        if (!shown && entry === entries.find((e) => plates.has(e))) raise(entry, 1.3);
-      }).catch(() => {}); // without its analysis an entry is still a link, and the sheet keeps the score
-    const look = () => { if (entry !== shown) raise(entry); };
+        analyses.set(entry, validateAnalysis(data));
+        // Network order must not choose a recording or override a pending focus.
+        if (entry === wanted || (!shown && failed.has(wanted))) raise(entry, 1.3);
+      }).catch(() => {
+        failed.add(entry);
+        const fallback = entries.find(e => analyses.has(e));
+        if (!dead && !shown && entry === wanted && fallback) raise(fallback);
+      }); // every entry remains a usable link if its optional analysis fails
+    const look = () => { wanted = entry; if (entry !== shown) raise(entry); };
     entry.addEventListener('pointerenter', (event) => { if (event.pointerType === 'mouse') look(); });
     entry.addEventListener('focus', look);
   }
@@ -274,7 +276,7 @@ function mount(duration) {
 function enter() {
   if (reduced) { gsap.set(main, { opacity: 1 }); return; }
   gsap.set(main, { opacity: 1 });
-  const parts = main.querySelectorAll('.lede, .show-head > *, .listen-head > *, .live-lyrics, .viewer, .show-body > *, .player, .full-lyrics, .tracks, .rooms li, .figure');
+  const parts = main.querySelectorAll('.music-heading > *, .catalog-heading, .setlist > li, .music-foot, .lede, .show-head > *, .listen-head > *, .live-lyrics, .viewer, .show-body > *, .player, .full-lyrics, .tracks, .rooms li, .figure');
   gsap.from(parts, { opacity: 0, y: 12, duration: .6, stagger: .035, ease: 'power3.out', clearProps: 'opacity,transform' });
 }
 const pages = new Map();

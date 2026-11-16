@@ -1,18 +1,16 @@
-import { cueAt, frameAt, clock, clamp, validateAnalysis, validateLyrics, plateOf, characterOf } from './listening-data.js';
+import { cueAt, frameAt, clock, clamp, validateAnalysis, validateLyrics, characterOf } from './listening-data.js';
 import './listening.css';
 
 const el = (tag, className, text) => { const node = document.createElement(tag); node.className = className; if (text) node.textContent = text; return node; };
 
-// A recording's plate, drawn flat: one column a moment, seven cells a column, the highest band on top.
-// A cell's width is that band's measured level there. Used for the timeline here and the stamp in the collection.
-export function drawPlate(holder, data, columns) {
-  const cols = plateOf(data, columns).map((bands) => {
-    const col = el('i', '');
-    for (let band = 6; band >= 0; band--) col.appendChild(el('b', '')).style.setProperty('--e', bands[band].toFixed(3));
-    return col;
+// A quiet amplitude trace for seeking; the sculpture need not repeat in the controls.
+function drawTimeline(holder, data, columns) {
+  const cols = Array.from({ length: columns }, (_, i) => {
+    const start = Math.floor(i / columns * data.frames.length), end = Math.max(start + 1, Math.floor((i + 1) / columns * data.frames.length));
+    const level = data.frames.slice(start, end).reduce((sum, frame) => sum + frame[0], 0) / (end - start) / 255;
+    const col = el('i', ''); col.style.height = `${5 + level * 29}px`; return col;
   });
   holder.replaceChildren(...cols);
-  holder.style.setProperty('--columns', columns);
   return cols;
 }
 
@@ -33,7 +31,7 @@ export function listening(page, { getField, getSheet, motion, getCollection }) {
   const play = el('button', 'play', 'Play'); play.type = 'button'; play.setAttribute('aria-label', `Play ${audio.getAttribute('aria-label')}`);
   play.setAttribute('aria-pressed', 'false');
   const transport = el('div', 'transport'), scrub = el('div', 'scrub');
-  const bars = el('span', 'scrub-bars plate'); bars.setAttribute('aria-hidden', 'true');
+  const bars = el('span', 'scrub-bars'); bars.setAttribute('aria-hidden', 'true');
   let cells = Array.from({ length: 80 }, () => bars.appendChild(el('i', '')));
   bars.style.setProperty('--columns', 80);
   const range = el('input', ''); range.type = 'range'; range.min = 0; range.max = article.dataset.length; range.step = .1; range.value = 0;
@@ -163,7 +161,7 @@ export function listening(page, { getField, getSheet, motion, getCollection }) {
   }
   load(article.dataset.analysis, validateAnalysis).then(data => {
     analysis = data; character = characterOf(data);
-    cells = drawPlate(bars, data, cells.length); pastCell = -1;
+    cells = drawTimeline(bars, data, cells.length); pastCell = -1;
     install(0);
   }).catch(() => {}); // Playback and the text remain usable if the optional visual data fails.
   load(article.dataset.lyrics, validateLyrics).then(data => {

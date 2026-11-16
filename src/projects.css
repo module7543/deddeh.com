@@ -153,3 +153,51 @@ html:not(.has-field) .tab[aria-pressed='true'] { border-bottom-color: var(--acce
 @media (prefers-reduced-motion: reduce) {
   .return span, .rooms .word, .entry-name, .entry-go, .shot, .js .shot.is-on, .tab, .play, .scrub-bars i, .access .open, .track-step-title { transition: none; }
 }
+
+/* Music has its own entrance: a title, an open field, then the recordings.
+   The catalogue grows in normal flow; neither the first song nor a count is featured. */
+#room.music-collection { grid-template-columns: minmax(0, .9fr) minmax(0, 1.1fr); grid-template-rows: minmax(410px, 1fr) auto auto; padding-top: 38px; }
+.music-heading { grid-column: 1; grid-row: 1; align-self: start; position: relative; z-index: 1; }
+.music-kicker { display: flex; gap: 32px; font: 400 12px/1.5 var(--mono); text-transform: uppercase; letter-spacing: .1em; color: var(--muted); }
+.music-kicker span:last-child { color: var(--violet); }
+.music-heading h1 { margin: 28px 0 18px -.045em; font: italic 400 clamp(120px, 15.6vw, 240px)/.88 var(--serif); letter-spacing: -.055em; }
+.music-period { color: var(--violet); }
+.music-intro { max-width: 14em; margin-top: 30px; font: italic 400 clamp(26px, 2.6vw, 38px)/1.18 var(--serif); color: var(--muted); }
+.music-collection .sheet-slot { grid-column: 2; grid-row: 1; min-height: 410px; }
+.music-catalog { grid-column: 1 / -1; grid-row: 2; margin-top: 40px; }
+.catalog-heading { display: flex; justify-content: space-between; gap: 20px; padding: 0 0 18px; font: 400 12px/1.5 var(--mono); color: var(--muted); }
+.catalog-heading h2 { font: inherit; text-transform: uppercase; letter-spacing: .1em; color: var(--violet); }
+.music-catalog .setlist { border-bottom: 1px solid var(--rule); }
+.music-catalog .entry { grid-template-columns: 64px minmax(0, 1fr) 70px 44px; align-items: center; gap: 8px 20px; padding: 22px 8px 24px 0; position: relative; }
+.music-catalog .entry::before { content: ''; position: absolute; inset: 0; z-index: -1; background: linear-gradient(90deg, transparent, #a898dc0d); opacity: 0; transition: opacity .4s; }
+.music-catalog .entry:hover::before, .music-catalog .entry:focus-visible::before { opacity: 1; }
+.music-catalog .entry-no { align-self: start; padding-top: 9px; font: 400 13px/1.4 var(--mono); }
+.music-catalog .entry-name { font-size: clamp(36px, 4.1vw, 62px); line-height: 1.08; text-decoration: none; transition: color .3s; }
+.music-catalog .entry:hover .entry-name, .music-catalog .entry:focus-visible .entry-name { color: var(--violet); }
+.music-catalog .entry-time { text-align: right; }
+.music-catalog .entry-go { justify-self: end; font-size: 24px; }
+.entry-invitation { grid-column: 2; font: 400 12px/1.5 var(--mono); color: var(--muted); }
+.music-foot { grid-column: 1 / -1; grid-row: 3; display: flex; justify-content: space-between; align-items: baseline; gap: 24px; padding-top: 24px; }
+.music-foot .figure { font-size: 12px; text-align: left; }
+.music-sibling { flex-shrink: 0; display: inline-flex; gap: 24px; align-items: center; min-height: 44px; font: 400 12px/1.4 var(--mono); color: var(--muted); }
+.music-sibling:hover { color: var(--ink); }
+@media (max-width: 820px) {
+  #room.music-collection { grid-template-columns: minmax(0, 1fr); grid-template-rows: auto auto auto auto; padding-top: 24px; }
+  .music-kicker { justify-content: space-between; gap: 16px; font-size: 11px; }
+  .music-heading h1 { font-size: clamp(112px, 30vw, 210px); margin-top: 22px; }
+  .music-intro { margin-top: 20px; max-width: none; font-size: 26px; }
+  .music-collection .sheet-slot { grid-column: 1; grid-row: 2; min-height: 220px; height: clamp(220px, 30svh, 320px); }
+  .music-catalog { grid-row: 3; margin-top: 16px; }
+  .catalog-heading { font-size: 10px; gap: 12px; }
+  .music-catalog .entry { grid-template-columns: 24px minmax(0, 1fr) 36px; gap: 10px 12px; padding: 20px 0; }
+  .music-catalog .entry-name { font-size: clamp(30px, 7.8vw, 48px); }
+  .music-catalog .entry-no { font-size: 11px; padding-top: 4px; }
+  .music-catalog .entry-time { grid-column: 3; grid-row: 2; font-size: 11px; }
+  .music-catalog .entry-go { grid-column: 3; grid-row: 1; font-size: 20px; }
+  .entry-invitation { font-size: 10px; }
+  .music-foot { grid-row: 4; align-items: start; flex-direction: column; gap: 10px; padding-top: 20px; }
+  .music-foot .figure { margin-top: 0; font-size: 11px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .music-catalog .entry::before, .music-catalog .entry-name { transition: none; }
+}

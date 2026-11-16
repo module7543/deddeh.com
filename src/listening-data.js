@@ -17,16 +17,6 @@ export function validateLyrics(data) {
   if (!Array.isArray(data.cues) || !data.cues.length || data.cues.some((c, i) => !c.text || !Number.isInteger(c.stanza) || c.stanza < 0 || !Number.isFinite(c.start) || !Number.isFinite(c.end) || c.start < 0 || c.end <= c.start || (i && c.start < data.cues[i - 1].end))) throw new Error('Invalid lyric timing');
   return data;
 }
-// A recording's plate: its seven bands across its whole length, in as many columns as asked for.
-// The same measurement is read three ways: a stamp in the collection, the relief on the sheet, the timeline under it.
-export function plateOf(data, columns) {
-  return Array.from({ length: columns }, (_, i) => {
-    const start = Math.floor(i / columns * data.frames.length), end = Math.max(start + 1, Math.floor((i + 1) / columns * data.frames.length));
-    const sum = new Array(7).fill(0);
-    for (let n = start; n < end; n++) for (let band = 0; band < 7; band++) sum[band] += data.frames[n][band + 2];
-    return sum.map(v => v / (end - start) / 255);
-  });
-}
 // What a recording is like, measured from the analysis it already has. Every column is scaled to the recording's
 // own peaks, so these compare a recording with itself: how full it stays (sustain), how much it changes from one
 // frame to the next (motion), and which end of the spectrum it spends more of its time in (tilt, -1 low to 1 high).
