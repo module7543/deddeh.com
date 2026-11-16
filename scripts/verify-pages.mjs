@@ -4,7 +4,7 @@ import { mkdir } from 'node:fs/promises';
 
 const url = process.env.PREVIEW_URL;
 // The public preview, or a local build (http://localhost:4173/) when checking a branch before it is merged.
-assert(url === 'https://module7543.github.io/deddeh.com/' || /^http:\/\/localhost:\d+\/$/.test(url), 'Verify only the repository preview or a local build');
+assert(url === 'https://module7543.github.io/deddeh.com/' || /^http:\/\/localhost:\d+\/(deddeh\.com\/)?$/.test(url), 'Verify only the repository preview or a local build');
 const cors = { 'access-control-allow-origin': '*', 'access-control-allow-headers': '*', 'access-control-allow-methods': 'POST, OPTIONS' };
 await mkdir('artifacts', { recursive: true });
 const browser = await chromium.launch(process.env.CHROMIUM_PATH ? { executablePath: process.env.CHROMIUM_PATH } : {});
@@ -145,14 +145,14 @@ try {
     await page.waitForURL(/\/projects\/apps\/$/);
     await press(page.locator('.rooms .toc-item:not(.is-active)'));
     await page.waitForURL(/\/projects\/music\/$/);
-    await expect(page.locator('.setlist .entry')).toHaveCount(2);
+    await expect(page.locator('.setlist .entry')).toHaveCount(1);
     await noOverflow('on Music');
     await press(page.locator('.setlist .entry').first());
-    await page.waitForURL(/\/projects\/music\/sample-track\/$/);
+    await page.waitForURL(/\/projects\/music\/sweet-on-my-tongue\/$/);
     const song = page.url(), play = page.locator('.play');
     await expect(page.locator('.listen h1')).toBeVisible();
     await expect(play).toHaveAttribute('aria-pressed', 'false'); // nothing plays until asked
-    await expect(page.locator('.source-note')).toContainText('Test signal');
+    await expect(page.locator('.lyric-line')).toHaveCount(4);
     await play.click();
     await expect(play).toHaveAttribute('aria-pressed', 'true');
     await expect(page.locator('.now')).not.toHaveText('0:00', { timeout: 8000 });
@@ -160,12 +160,9 @@ try {
     await expect(play).toHaveAttribute('aria-pressed', 'false');
     await noOverflow('on the track');
     await page.screenshot({ path: `artifacts/pages-track-${mobile ? 'mobile' : 'desktop'}.png`, fullPage: true });
-    await press(page.locator('.track-step'));
-    await page.waitForURL(/\/projects\/music\/second-sample\/$/);
-    await expect(page.locator('.play')).toHaveAttribute('aria-pressed', 'false');
     const cold = await page.goto(song, { waitUntil: 'networkidle' }); // a track's own address, opened cold
     assert.equal(cold.status(), 200);
-    await expect(page.locator('.listen h1')).toHaveText('Sample Track');
+    await expect(page.locator('.listen h1')).toHaveText('Sweet on my Tongue');
     await press(page.locator('.return'));
     await page.waitForURL(/\/projects\/music\/$/);
     await press(page.locator('.return'));

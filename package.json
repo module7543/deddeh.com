@@ -7,11 +7,12 @@
     "dev": "vite --host 0.0.0.0 --port 4173 --strictPort",
     "build": "vite build",
     "preview": "vite preview --host 0.0.0.0",
-    "check": "node --check src/main.js && node --check src/field.js && node --check src/proof.js && node --check src/article.js && node --check src/projects.js",
+    "check": "node --check src/main.js && node --check src/field.js && node --check src/proof.js && node --check src/article.js && node --check src/projects.js && node --check src/listening.js && node --check src/listening-data.js",
     "package:preview": "node scripts/package-preview.mjs",
     "test": "vitest run",
     "build:pages": "vite build --base=/deddeh.com/",
-    "verify:pages": "node scripts/verify-pages.mjs"
+    "verify:pages": "node scripts/verify-pages.mjs",
+    "verify:music": "node scripts/verify-music.mjs"
   },
   "dependencies": {
     "@fontsource-variable/archivo": "^5.3.0",

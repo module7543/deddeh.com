@@ -1,0 +1,199 @@
+{
+  "version": 1,
+  "duration": 206.16,
+  "method": "Vocal separation, CTC alignment, cross-model and vocal-envelope boundary review; line-level, approximate.",
+  "cues": [
+    {
+      "text": "Our hands take bread",
+      "start": 16.36,
+      "end": 17.98,
+      "stanza": 0
+    },
+    {
+      "text": "Yours take the same",
+      "start": 20.1,
+      "end": 22.02,
+      "stanza": 0
+    },
+    {
+      "text": "I call ours need",
+      "start": 24.24,
+      "end": 26.24,
+      "stanza": 0
+    },
+    {
+      "text": "I give yours a name",
+      "start": 27.84,
+      "end": 30.68,
+      "stanza": 0
+    },
+    {
+      "text": "I throw the word",
+      "start": 32.12,
+      "end": 33.48,
+      "stanza": 1
+    },
+    {
+      "text": "It lands on you",
+      "start": 36.06,
+      "end": 37.52,
+      "stanza": 1
+    },
+    {
+      "text": "I check the shape",
+      "start": 40.02,
+      "end": 41.52,
+      "stanza": 1
+    },
+    {
+      "text": "It fits me too",
+      "start": 43.84,
+      "end": 45.36,
+      "stanza": 1
+    },
+    {
+      "text": "Sweet on my tongue",
+      "start": 48.08,
+      "end": 50.78,
+      "stanza": 2
+    },
+    {
+      "text": "Sharp on your skin",
+      "start": 52.04,
+      "end": 53.3,
+      "stanza": 2
+    },
+    {
+      "text": "I let mine slide",
+      "start": 55.9,
+      "end": 58.58,
+      "stanza": 2
+    },
+    {
+      "text": "I turn you in",
+      "start": 59.09,
+      "end": 61.21,
+      "stanza": 2
+    },
+    {
+      "text": "Your fire's a threat",
+      "start": 92.86,
+      "end": 94.48,
+      "stanza": 3
+    },
+    {
+      "text": "Ours keeps us warm",
+      "start": 97.0,
+      "end": 99.62,
+      "stanza": 3
+    },
+    {
+      "text": "Same wood, same match",
+      "start": 100.72,
+      "end": 103.12,
+      "stanza": 3
+    },
+    {
+      "text": "I ring the alarm",
+      "start": 104.58,
+      "end": 108.22,
+      "stanza": 3
+    },
+    {
+      "text": "I throw the word",
+      "start": 108.8,
+      "end": 110.18,
+      "stanza": 4
+    },
+    {
+      "text": "It lands on you",
+      "start": 112.76,
+      "end": 114.26,
+      "stanza": 4
+    },
+    {
+      "text": "I check the shape",
+      "start": 116.78,
+      "end": 118.16,
+      "stanza": 4
+    },
+    {
+      "text": "It fits me too",
+      "start": 120.58,
+      "end": 121.98,
+      "stanza": 4
+    },
+    {
+      "text": "Sweet on my tongue",
+      "start": 124.84,
+      "end": 128.56,
+      "stanza": 5
+    },
+    {
+      "text": "Sharp on your skin",
+      "start": 128.78,
+      "end": 130.02,
+      "stanza": 5
+    },
+    {
+      "text": "I call mine us",
+      "start": 131.94,
+      "end": 135.0,
+      "stanza": 5
+    },
+    {
+      "text": "I call yours them",
+      "start": 135.4,
+      "end": 140.3,
+      "stanza": 5
+    },
+    {
+      "text": "I know your kind",
+      "start": 156.22,
+      "end": 158.18,
+      "stanza": 6
+    },
+    {
+      "text": "I say it low",
+      "start": 160.2,
+      "end": 161.98,
+      "stanza": 6
+    },
+    {
+      "text": "I've left those tracks",
+      "start": 164.08,
+      "end": 166.54,
+      "stanza": 6
+    },
+    {
+      "text": "In the snow",
+      "start": 168.38,
+      "end": 169.32,
+      "stanza": 6
+    },
+    {
+      "text": "Sweet on my tongue",
+      "start": 172.04,
+      "end": 175.98,
+      "stanza": 7
+    },
+    {
+      "text": "Sharp on my skin",
+      "start": 176.06,
+      "end": 177.54,
+      "stanza": 7
+    },
+    {
+      "text": "I say your name",
+      "start": 180.2,
+      "end": 183.26,
+      "stanza": 7
+    },
+    {
+      "text": "I hear my own",
+      "start": 183.72,
+      "end": 196.04,
+      "stanza": 7
+    }
+  ]
+}
