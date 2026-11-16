@@ -199,6 +199,22 @@ export function score(seed = 7) {
   return out;
 }
 
+// Seven broad frequency bands across twenty moments in the actual recording.
+// This is a spectral relief, deliberately without piano keys or implied pitches.
+export function spectralSheet(data) {
+  const out = [];
+  const palette = [C.orange, C.text, C.ink, C.violet, C.violet, C.blue, C.teal];
+  for (let band = 0; band < 7; band++) for (let column = 0; column < 20; column++) {
+    const energy = data.overview[column][band + 2] / 255;
+    out.push({ x: SCORE_X + (column + .5) * SCORE_W / 20,
+      y: rowY(12.5 - band * 2), w: SCORE_W / 20 * (.24 + energy * .64),
+      h: 1.1 + energy * 3.3, z: energy ** 2 * 9, c: palette[band], band, energy });
+  }
+  out.push({ x: SCORE_X, y: 0, w: .65, h: ROWS * PITCH, z: 1.6, c: C.orange });
+  out.spectral = true;
+  return out;
+}
+
 const FORMATIONS = { blank: blank(), name: name(), bits: bits(), writing: writing(), projects: projects(), contact: contact(), apps: apps(), music: score() };
 const SPIN = { blank: -.4, name: -.4, bits: -.4, writing: -.34, projects: -.46, contact: -.3, card: 0, apps: -.46, music: -.36 };
 const PITCH_X = -.98; // how far the sheet leans back when it is not laid flat
@@ -292,6 +308,8 @@ export class Field {
     this.onPointer = (event) => this.point(event.clientX, event.clientY, event.pointerType);
     this.onLeave = () => gsap.to(this.pointer, { power: 0, tiltX: 0, tiltY: 0, duration: .9, ease: 'power2.out' });
     this.onResize = () => this.resize();
+    this.onScroll = () => { if (this.to.spectral) this.positionSlot(); };
+    window.addEventListener('scroll', this.onScroll, { passive: true });
     this.onVisibility = () => { this.visible = !document.hidden; };
     window.addEventListener('pointermove', this.onPointer, { passive: true });
     window.addEventListener('pointerdown', this.onPointer, { passive: true });
@@ -311,10 +329,15 @@ export class Field {
     this.renderer.setSize(w, h, false);
     Object.assign(this.camera, { left: -w / 2, right: w / 2, top: h / 2, bottom: -h / 2 });
     this.camera.updateProjectionMatrix();
+    this.positionSlot();
+  }
+
+  positionSlot() {
+    const w = window.innerWidth, h = window.innerHeight;
     const slot = this.slot.getBoundingClientRect();
     const narrow = w <= 820;
     const scale = narrow ? Math.min((w * .84) / W, (slot.height * 1.3) / (ROWS * PITCH * .62)) : Math.min((slot.width * 1.04) / W, (h * .95) / (ROWS * PITCH * .62));
-    this.group.scale.setScalar(scale);
+    this.group.scale.setScalar(scale * (this.to?.spectral ? .78 : 1));
     const cx = narrow ? w * .5 : slot.left + slot.width * .5;
     const cy = slot.top + slot.height * (narrow ? .56 : .41);
     this.home.x = cx - w / 2; this.home.y = h / 2 - cy;
@@ -322,6 +345,7 @@ export class Field {
   }
 
   point(clientX, clientY, type) {
+    if (this.to.spectral) return;
     const w = window.innerWidth, h = window.innerHeight;
     this.group.updateMatrixWorld();
     this.inverse.copy(this.group.matrixWorld).invert();
@@ -339,7 +363,10 @@ export class Field {
     const changed = name !== this.name;
     this.name = name;
     this.state.forEach((s, i) => { Object.assign(this.from[i], { x: s.x, y: s.y, w: s.w, h: s.h, z: s.z }); this.from[i].col.copy(s.col); });
+    const wasSpectral = Boolean(this.to.spectral);
     this.to = this.formations[name];
+    if (wasSpectral !== Boolean(this.to.spectral)) this.resize();
+    if (this.to.spectral) { gsap.killTweensOf(this.pointer); Object.assign(this.pointer, { power: 0, tiltX: 0, tiltY: 0 }); }
     this.delay = this.delays[name] ?? this.sweep;
     gsap.killTweensOf(this.progress);
     this.progress.t = 0;
@@ -413,6 +440,8 @@ export class Field {
     this.dirty = true;
   }
 
+  setAudioFrame(frame) { this.audioFrame = frame; if (!this.reduced) this.dirty = true; }
+
   setReducedMotion(reduced) { this.reduced = reduced; this.dirty = true; }
   refresh() { this.dirty = true; }
 
@@ -420,7 +449,7 @@ export class Field {
     if (!this.visible) return;
     const p = this.pointer;
     const moving = this.progress.t < 1 || p.power > .002 || gsap.isTweening(this.group.rotation) || gsap.isTweening(this.floor.material.uniforms.uTint.value) || gsap.isTweening(this.flat) || Boolean(this.paper?.isActive());
-    if (this.reduced && !moving && !this.dirty) return;
+    if ((this.reduced || this.to.spectral) && !moving && !this.dirty) return;
     this.dirty = false;
     this.time += delta / 1000;
     const colors = this.toColors[this.name];
@@ -444,8 +473,8 @@ export class Field {
       s.h = a.h + ((b.h ?? BLOCK_H) - a.h) * k;
       s.col.copy(a.col).lerp(colors[i], k);
       const dx = s.x - p.x, dy = s.y - p.y;
-      const near = p.power * Math.exp(-(dx * dx + dy * dy) / 330);
-      const wave = this.reduced ? 0 : .22 * (1 + Math.sin(this.time * .7 + s.x * .06 - s.y * .11));
+      const near = (this.to.spectral ? 0 : p.power) * Math.exp(-(dx * dx + dy * dy) / 330);
+      const wave = this.reduced || this.to.spectral ? 0 : .22 * (1 + Math.sin(this.time * .7 + s.x * .06 - s.y * .11));
       const arc = Math.sin(k * Math.PI) * 2.2;
       let depth = BLOCK_Z + (near * 7 + wave) * (1 - flat * .7) + arc;
       this.color.copy(s.col).lerp(this.hi, near * .6);
@@ -454,7 +483,13 @@ export class Field {
         if (i === CURSOR) { bx = this.head; by = 0; bw = .9; bh = ROWS * PITCH + 4; depth = BLOCK_Z + 1.2; }
         else if (s.x > SCORE_X - 1) { // the note under the playhead stands up
           const lit = Math.min(Math.max(1.6 - (Math.abs(s.x - this.head) - s.w / 2), 0), 1);
-          depth += lit * 2.6; this.color.lerp(this.hi, lit * .55);
+          if (this.to.spectral) {
+            const energy = this.audioFrame?.[b.band + 2] ?? 0;
+            const attack = this.audioFrame?.[1] ?? 0;
+            const reach = Math.exp(-(((s.x - this.head) / 12) ** 2));
+            if (!this.reduced) depth += reach * (energy * 10 + attack * 2);
+            this.color.lerp(this.hi, lit * .3 + (this.reduced ? 0 : reach * energy * .25));
+          } else { depth += lit * 2.6; this.color.lerp(this.hi, lit * .55); }
         }
       }
       if (i === CURSOR && !this.reduced) this.color.lerp(this.off, (Math.sin(this.time * 3.2) > .2 ? 0 : .75) * (this.name === 'name' || this.name === 'bits' ? 1 : 0));
@@ -481,6 +516,7 @@ export class Field {
     window.removeEventListener('pointermove', this.onPointer);
     window.removeEventListener('pointerdown', this.onPointer);
     window.removeEventListener('resize', this.onResize);
+    window.removeEventListener('scroll', this.onScroll);
     document.removeEventListener('visibilitychange', this.onVisibility);
     this.observer.disconnect();
     for (const m of [this.mesh, this.shadows, this.floor]) { m.geometry.dispose(); m.material.dispose(); } this.renderer.dispose();

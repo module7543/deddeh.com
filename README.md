@@ -45,19 +45,19 @@ Vite finds every `writing/*/index.html` by itself. `npm run package:preview` bun
 
 ## Projects
 
-Projects is a small collection of things made, in collections. Today: **Apps** and **Music**. Placeholder content only; nothing here is a real application or recording.
+Projects is a small collection of things made, in collections. Today: **Apps** and **Music**. Apps retains its design samples. Music now includes **Sweet on My Tongue**, an original recording with synchronized lyrics and an audio-derived Three.js relief.
 
 - **On the homepage.** Hover or focus still only previews Projects. Choosing it opens the collections under the word, as Writing opens its essays. Moving over a collection (or tabbing to it) sets the sheet as that collection: a window for Apps (Fig. 2a), a piano-roll score for Music (Fig. 2b). Choosing one lets the sheet finish, clears the index, and opens the collection's page with the sheet standing where it stood.
 - **The room.** `projects/<collection>/` and `projects/<collection>/<slug>/` are real pages (`src/projects.js`, `src/projects.css`). Each opens and reloads on its own; links between them swap the page's `<main>` without a reload (History API), so the sheet stays and is re-set. Back and Forward work throughout. A collection page is the homepage's composition again, with the collections as its index. `projects/` itself redirects to `#projects`.
 - **Apps** are set structurally: Archivo, mono labels, green. An application's page lays the window flat as the frame of its screens (`Field.card`, as the postcard does), one tab a screen (click, arrow keys, or swipe), with a short description, a spec line and an Access note. A private application says so and links nowhere but Contact.
-- **Music** is set in the serif, in violet. A track's page keeps the sheet standing as its score, drawn from the track's slug, so every track has its own. The cursor is the playhead and the note beneath it stands up. Nothing plays until Play is pressed.
-- **Where the sound comes from**, on `<article class="listen">`: `data-src="./file.mp3"` (a file beside the page, played by the page's own player), or `data-suno="<song id>"` (Suno's player in an iframe, loaded only on request, with a link to the song on Suno), or neither, in which case a labelled test signal sounds the score as plain tones.
+- **Music** is set in the serif, in violet. Sweet on My Tongue gives the sheet a spectral relief measured from its recording, with the current verse in the lower-left and a shared waveform timeline. Nothing plays until Play is pressed. See [the listening-room guide](docs/music/README.md) for analysis, timing limitations, verification and adding future recordings.
+- **Legacy prototype sources**, on `<article class="listen">`: `data-src="./file.mp3"` (a file beside the page, played by the page's own player), or `data-suno="<song id>"` (Suno's player in an iframe, loaded only on request, with a link to the song on Suno), or neither, in which case a labelled test signal sounds the score as plain tones.
 - **Reduced motion:** links open directly and the sheet is set at once. **Without WebGL:** CSS rules draw the frame and tabs. **Without JavaScript:** all screens are shown in a column; the player asks for JavaScript.
 
 ### Adding to it
 
 - **An application:** copy `projects/apps/sample-app/`, replace the text and the `<figure class="shot" data-label="…">` images (any shape), delete `.slug`, and add a row to `.manifest` in `projects/apps/index.html`. For a public application replace the Access note with `<a class="open" href="…">Open the app</a>`.
-- **A track:** copy `projects/music/sample-track/`, set `data-track` (the slug), `data-length` (seconds) and a source, fix the Previous/Next link, delete `.slug`, and add a row to `.setlist` in `projects/music/index.html`.
+- **A recording:** follow [the listening-room guide](docs/music/README.md). Copy the real recording page, generate audio features, review lyric cues and add a Music collection link. The older sample pages remain unlisted design prototypes.
 - **A collection:** a folder under `projects/`, a word in `.rooms` on each collection page, a row in `#collections` in `index.html`, a formation in `src/field.js` and a view in `src/projects.js`.
 
 Vite finds every `projects/**/index.html` by itself.

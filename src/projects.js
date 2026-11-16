@@ -9,6 +9,7 @@ import '@fontsource/ibm-plex-mono/latin-500.css';
 import './style.css';
 import './projects.css';
 import { gsap } from 'gsap';
+import { listening } from './listening.js';
 
 const root = document.documentElement;
 const stage = document.querySelector('.stage');
@@ -145,6 +146,7 @@ function signal(notes, length) {
 }
 
 function track(page) {
+  if (page.querySelector('[data-analysis]')) return listening(page, { getField: () => field, getSheet: () => sheet, motion });
   const article = page.querySelector('.listen'), slot = page.querySelector('.sheet-slot'), player = page.querySelector('.player');
   const name = `track:${article.dataset.track}`, src = article.dataset.src, suno = article.dataset.suno;
   const title = page.querySelector('h1').textContent;
