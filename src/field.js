@@ -224,9 +224,9 @@ const TINT = { blank: raw(0x8a6a4c), name: raw(0x8a6a4c), bits: raw(0x8a6a4c), w
 const FLOOR_VERTEX = `varying vec2 vP; void main() { vP = position.xy; gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.); }`;
 const FLOOR_FRAGMENT = `
 precision highp float;
-uniform vec3 uBg, uTint, uPointer, uPaperCol;
+uniform vec3 uBg, uTint, uPointer, uPaperCol, uGlow, uHead;
 uniform vec2 uHalf;
-uniform float uPaper;
+uniform float uPaper, uStave, uLive, uLow;
 varying vec2 vP;
 float rule(float v, float cell) {
   float d = abs(fract(v / cell + .5) - .5) * cell;
@@ -239,9 +239,16 @@ void main() {
   vec2 d = vP - uPointer.xy;
   float spot = uPointer.z * exp(-dot(d, d) / 1100.);
   float grid = max(rule(vP.y, ${PITCH.toFixed(2)}), rule(vP.x, ${(W / COLS).toFixed(2)}));
+  // Music rules the floor as a stave: long lines along time, one under each band, and a faint bar line every five moments.
+  float stave = max(rule(vP.y, ${(PITCH * 2).toFixed(2)}), .3 * rule(vP.x - ${SCORE_X.toFixed(2)}, ${(SCORE_W / 4).toFixed(2)}));
+  grid = mix(grid, stave, uStave);
+  // The playhead throws a narrow light across the stave. It is faint at rest; the recording's level and low band feed it.
+  float hx = vP.x - uHead.x;
+  float beam = uHead.z * exp(-hx * hx / 150.) * exp(-vP.y * vP.y / (uHead.y * uHead.y * 1.6));
   vec3 col = uBg * (.7 + .3 * reach);
-  col += uTint * (.1 * pool + .045 * spot);
-  col += mix(vec3(.93, .9, .85), uTint, .45) * grid * (.008 + .085 * reach + .14 * spot);
+  col += uTint * (.1 * pool * (1. + .9 * uLive) + .045 * spot);
+  col += uGlow * beam * (.035 + .2 * uLow + .1 * uLive);
+  col += mix(vec3(.93, .9, .85), uTint, .45) * grid * (.008 + .085 * reach * (1. + .5 * uLive) + .14 * spot + .1 * beam * (.3 + uLive));
   // The proof: the sheet's own rectangle turns to paper and grows until it is the page.
   vec2 e = abs(vP) - uHalf;
   float inside = 1. - smoothstep(0., max(fwidth(vP.x), fwidth(vP.y)) * 1.5, max(e.x, e.y));
@@ -277,7 +284,7 @@ export class Field {
     this.mesh.frustumCulled = false;
     this.floor = new Mesh(new PlaneGeometry(8000, 8000), new ShaderMaterial({
       vertexShader: FLOOR_VERTEX, fragmentShader: FLOOR_FRAGMENT,
-      uniforms: { uBg: { value: raw(0x141311) }, uTint: { value: TINT.blank.clone() }, uPointer: { value: new Vector3() }, uPaperCol: { value: raw(PAPER) }, uHalf: { value: new Vector2(W / 2 + 5, (ROWS * PITCH) / 2 + 5) }, uPaper: { value: 0 } },
+      uniforms: { uBg: { value: raw(0x141311) }, uTint: { value: TINT.blank.clone() }, uPointer: { value: new Vector3() }, uPaperCol: { value: raw(PAPER) }, uHalf: { value: new Vector2(W / 2 + 5, (ROWS * PITCH) / 2 + 5) }, uPaper: { value: 0 }, uStave: { value: 0 }, uLive: { value: 0 }, uLow: { value: 0 }, uGlow: { value: raw(C.orange) }, uHead: { value: new Vector3(0, (ROWS * PITCH) / 2, 0) } },
     }));
     this.shadows = new InstancedMesh(new PlaneGeometry(1, 1), new MeshBasicMaterial({ color: SHADOW }), N);
     this.shadows.frustumCulled = false;
@@ -289,7 +296,7 @@ export class Field {
     this.to = FORMATIONS.blank;
     this.formations = { ...FORMATIONS };
     this.toColors = Object.fromEntries(Object.entries(FORMATIONS).map(([k, f]) => [k, f.map((b) => new Color(b.c))]));
-    this.flat = { v: 0 }; this.home = { x: 0, y: 0 }; this.cardEl = null;
+    this.flat = { v: 0 }; this.stave = { v: 0 }; this.home = { x: 0, y: 0 }; this.cardEl = null;
     this.name = 'blank';
     this.delay = FORMATIONS.blank.map((b) => ((b.x - LEFT) / W) * .45 + ((rowY(0) - b.y) / (PITCH * ROWS)) * .55);
     // The name and the number are set left to right, as if typed; everything else sweeps across the sheet.
@@ -337,15 +344,18 @@ export class Field {
     const slot = this.slot.getBoundingClientRect();
     const narrow = w <= 820;
     const scale = narrow ? Math.min((w * .84) / W, (slot.height * 1.3) / (ROWS * PITCH * .62)) : Math.min((slot.width * 1.04) / W, (h * .95) / (ROWS * PITCH * .62));
-    this.group.scale.setScalar(scale * (this.to?.spectral ? .78 : 1));
+    this.fit = scale * (this.to?.spectral ? (narrow ? .84 : .88) : 1);
+    if (!gsap.isTweening(this.group.scale)) this.group.scale.setScalar(this.fit);
     const cx = narrow ? w * .5 : slot.left + slot.width * .5;
     const cy = slot.top + slot.height * (narrow ? .56 : .41);
-    this.home.x = cx - w / 2; this.home.y = h / 2 - cy;
+    // A plate stands right of the sheet's centre (its start line is at SCORE_X), so it is brought back to the slot's.
+    const off = this.to?.spectral ? (SCORE_X + SCORE_W / 2) * this.fit : 0;
+    this.rest = { x: cx - w / 2 - off * Math.cos(SPIN.music), y: h / 2 - cy - off * Math.sin(SPIN.music) * Math.cos(PITCH_X) };
+    if (!gsap.isTweening(this.home)) Object.assign(this.home, this.rest);
     this.dirty = true;
   }
 
   point(clientX, clientY, type) {
-    if (this.to.spectral) return;
     const w = window.innerWidth, h = window.innerHeight;
     this.group.updateMatrixWorld();
     this.inverse.copy(this.group.matrixWorld).invert();
@@ -378,6 +388,7 @@ export class Field {
     gsap.to(tint, { r: to.r, g: to.g, b: to.b, duration: this.reduced ? 0 : 1.1, ease: 'power2.out', overwrite: 'auto' });
     gsap.to(this.group.rotation, { z: SPIN[name], duration: this.reduced ? 0 : 1.3, ease: 'power3.inOut', overwrite: 'auto' });
     gsap.to(this.flat, { v: name === 'card' ? 1 : 0, duration: this.reduced ? 0 : 1.2, ease: 'power3.inOut', overwrite: 'auto' });
+    gsap.to(this.stave, { v: this.to.spectral || name === 'music' ? 1 : 0, duration: this.reduced ? 0 : 1.4, ease: 'power2.inOut', overwrite: 'auto' });
   }
 
   // Lay the sheet flat behind a DOM element and set the blocks from its parts.
@@ -421,6 +432,14 @@ export class Field {
     this.formations[name] = formation;
     this.toColors[name] = formation.map((b) => new Color(b.c));
     SPIN[name] = SPIN[like]; TINT[name] = TINT[like];
+    // A recording is set in the order it is heard: start to end, low band first.
+    if (formation.spectral) this.delays[name] = formation.map((b, i) => (i === CURSOR ? 0 : Math.min(Math.max((b.x - SCORE_X) / SCORE_W, 0), 1) * .82 + b.band * .026));
+  }
+  has(name) { return Boolean(this.formations[name]); }
+  // What the recording is like (see characterOf): the colour of the playhead's light runs from warm to cool with its spectral tilt.
+  setCharacter(character) {
+    const to = raw(C.orange).lerp(raw(C.teal), character ? Math.min(Math.max(.5 + character.tilt * 1.6, 0), 1) : 0);
+    gsap.to(this.floor.material.uniforms.uGlow.value, { r: to.r, g: to.g, b: to.b, duration: this.reduced ? 0 : 1, overwrite: true, onUpdate: () => { this.dirty = true; } });
   }
   // The floor light, for a flat sheet that belongs to a section other than Contact.
   light(name) {
@@ -429,10 +448,17 @@ export class Field {
   }
   // The room's pages replace one another without a reload; the sheet follows whichever slot is on the page.
   setSlot(slot) {
+    const from = { ...this.home }, size = this.group.scale.x, glide = this.to.spectral && !this.reduced && slot !== this.slot;
     this.observer.disconnect();
     this.slot = slot;
     this.observer.observe(slot);
+    gsap.killTweensOf([this.home, this.group.scale]);
     this.resize();
+    if (!glide) return;
+    // Between Music's pages the plate does not jump: it crosses the floor to its new place.
+    const settle = () => { Object.assign(this.home, this.rest); this.group.scale.setScalar(this.fit); this.dirty = true; };
+    gsap.fromTo(this.home, from, { ...this.rest, duration: .9, ease: 'power3.inOut', onComplete: settle });
+    gsap.fromTo(this.group.scale, { x: size, y: size, z: size }, { x: this.fit, y: this.fit, z: this.fit, duration: .9, ease: 'power3.inOut' });
   }
   // The playhead: a position along the score (0 to 1), or null for none. The cursor becomes a bar that crosses the sheet.
   setHead(position) {
@@ -448,7 +474,7 @@ export class Field {
   frame(delta) {
     if (!this.visible) return;
     const p = this.pointer;
-    const moving = this.progress.t < 1 || p.power > .002 || gsap.isTweening(this.group.rotation) || gsap.isTweening(this.floor.material.uniforms.uTint.value) || gsap.isTweening(this.flat) || Boolean(this.paper?.isActive());
+    const moving = this.progress.t < 1 || p.power > .002 || gsap.isTweening(this.group.rotation) || gsap.isTweening(this.floor.material.uniforms.uTint.value) || gsap.isTweening(this.flat) || gsap.isTweening(this.stave) || gsap.isTweening(this.home) || Boolean(this.paper?.isActive());
     if ((this.reduced || this.to.spectral) && !moving && !this.dirty) return;
     this.dirty = false;
     this.time += delta / 1000;
@@ -464,7 +490,11 @@ export class Field {
       py += (window.innerHeight / 2 - (r.top + r.height / 2) - py) * flat;
     }
     this.group.position.set(px, py, 0);
-    this.floor.material.uniforms.uPointer.value.set(p.x, p.y, p.power);
+    const u = this.floor.material.uniforms, heard = this.reduced ? null : this.audioFrame;
+    u.uPointer.value.set(p.x, p.y, p.power);
+    u.uStave.value = this.stave.v;
+    u.uLive.value = heard?.[0] ?? 0; u.uLow.value = heard?.[2] ?? 0;
+    u.uHead.value.set(this.head ?? 0, (ROWS * PITCH) / 2, this.head !== null && this.to.spectral ? this.stave.v : 0);
     for (let i = 0; i < N; i++) {
       const a = this.from[i], b = this.to[i], s = this.state[i];
       const k = ease(Math.min(Math.max(T - this.delay[i] * spread, 0), 1));
@@ -487,8 +517,9 @@ export class Field {
             const energy = this.audioFrame?.[b.band + 2] ?? 0;
             const attack = this.audioFrame?.[1] ?? 0;
             const reach = Math.exp(-(((s.x - this.head) / 12) ** 2));
-            if (!this.reduced) depth += reach * (energy * 10 + attack * 2);
-            this.color.lerp(this.hi, lit * .3 + (this.reduced ? 0 : reach * energy * .25));
+            // Under the playhead a band stands to its level; along the rest of its line it only stirs.
+            if (!this.reduced) depth += energy * (reach * 10 + 1.5) + reach * attack * 2;
+            this.color.lerp(this.hi, lit * .3 + (this.reduced ? 0 : (reach * .25 + .06) * energy));
           } else { depth += lit * 2.6; this.color.lerp(this.hi, lit * .55); }
         }
       }
