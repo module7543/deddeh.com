@@ -45,6 +45,8 @@ describe('The recording and its timed data', () => {
     const silent = {...analysis, overview: analysis.overview.map(row => row.map(() => 0))};
     const a = spectralSheet(analysis), b = spectralSheet(silent);
     expect(a).toHaveLength(141);
+    expect(createHash('sha256').update(JSON.stringify(a)).digest('hex')).toBe('79d2549350be54c2aa9ed996935dcbb229dc4785f55fcb56984f95391827e04c');
+    expect(a.slice(0, 140).every(block => block.w > 0 && block.h > 0)).toBe(true);
     expect(a.spectral).toBe(true);
     expect(a[35].z).toBeGreaterThan(b[35].z);
     expect(new Set(a.slice(0,140).map(block => block.band)).size).toBe(7);
@@ -75,7 +77,8 @@ describe('The recording and its timed data', () => {
   it('lists the recording in the collection with its own analysis, and keeps the song page generic', () => {
     const shelf = readFileSync('projects/music/index.html', 'utf8'), song = readFileSync('projects/music/sweet-on-my-tongue/index.html', 'utf8');
     expect(shelf).toMatch(/href="\.\/sweet-on-my-tongue\/"[^>]*data-analysis="\.\.\/\.\.\/music\/sweet-on-my-tongue\.analysis\.json"/);
-    expect(shelf).toContain('class="entry-plate plate"');
+    expect(shelf).not.toContain('entry-plate');
+    expect(shelf).toContain('class="recordings"');
     expect(song).not.toMatch(/class="tracks"/); // neighbours are read from the collection, never written by hand
   });
   it('rejects invalid data instead of feeding NaNs into the scene or the media clock', () => {

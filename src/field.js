@@ -226,7 +226,7 @@ const FLOOR_FRAGMENT = `
 precision highp float;
 uniform vec3 uBg, uTint, uPointer, uPaperCol, uGlow, uHead;
 uniform vec2 uHalf;
-uniform float uPaper, uStave, uLive, uLow;
+uniform float uPaper, uMusic, uLive, uLow;
 varying vec2 vP;
 float rule(float v, float cell) {
   float d = abs(fract(v / cell + .5) - .5) * cell;
@@ -239,13 +239,14 @@ void main() {
   vec2 d = vP - uPointer.xy;
   float spot = uPointer.z * exp(-dot(d, d) / 1100.);
   float grid = max(rule(vP.y, ${PITCH.toFixed(2)}), rule(vP.x, ${(W / COLS).toFixed(2)}));
-  // Music rules the floor as a stave: long lines along time, one under each band, and a faint bar line every five moments.
-  float stave = max(rule(vP.y, ${(PITCH * 2).toFixed(2)}), .3 * rule(vP.x - ${SCORE_X.toFixed(2)}, ${(SCORE_W / 4).toFixed(2)}));
-  grid = mix(grid, stave, uStave);
-  // The playhead throws a narrow light across the stave. It is faint at rest; the recording's level and low band feed it.
+  // Music opens into a deeper, sparsely ruled field. The sculpture itself is unchanged.
+  float architecture = max(rule(vP.y, ${(PITCH * 4).toFixed(2)}), rule(vP.x, ${(W / COLS * 4).toFixed(2)}));
+  grid = mix(grid, architecture * .32, uMusic);
+  // Preserve the recording-driven moving light independently of the floor pattern.
   float hx = vP.x - uHead.x;
   float beam = uHead.z * exp(-hx * hx / 150.) * exp(-vP.y * vP.y / (uHead.y * uHead.y * 1.6));
-  vec3 col = uBg * (.7 + .3 * reach);
+  vec3 ground = mix(uBg, vec3(.035, .085, .10), uMusic);
+  vec3 col = ground * (.7 + .3 * reach);
   col += uTint * (.1 * pool * (1. + .9 * uLive) + .045 * spot);
   col += uGlow * beam * (.035 + .2 * uLow + .1 * uLive);
   col += mix(vec3(.93, .9, .85), uTint, .45) * grid * (.008 + .085 * reach * (1. + .5 * uLive) + .14 * spot + .1 * beam * (.3 + uLive));
@@ -284,7 +285,7 @@ export class Field {
     this.mesh.frustumCulled = false;
     this.floor = new Mesh(new PlaneGeometry(8000, 8000), new ShaderMaterial({
       vertexShader: FLOOR_VERTEX, fragmentShader: FLOOR_FRAGMENT,
-      uniforms: { uBg: { value: raw(0x141311) }, uTint: { value: TINT.blank.clone() }, uPointer: { value: new Vector3() }, uPaperCol: { value: raw(PAPER) }, uHalf: { value: new Vector2(W / 2 + 5, (ROWS * PITCH) / 2 + 5) }, uPaper: { value: 0 }, uStave: { value: 0 }, uLive: { value: 0 }, uLow: { value: 0 }, uGlow: { value: raw(C.orange) }, uHead: { value: new Vector3(0, (ROWS * PITCH) / 2, 0) } },
+      uniforms: { uBg: { value: raw(0x141311) }, uTint: { value: TINT.blank.clone() }, uPointer: { value: new Vector3() }, uPaperCol: { value: raw(PAPER) }, uHalf: { value: new Vector2(W / 2 + 5, (ROWS * PITCH) / 2 + 5) }, uPaper: { value: 0 }, uMusic: { value: 0 }, uLive: { value: 0 }, uLow: { value: 0 }, uGlow: { value: raw(C.orange) }, uHead: { value: new Vector3(0, (ROWS * PITCH) / 2, 0) } },
     }));
     this.shadows = new InstancedMesh(new PlaneGeometry(1, 1), new MeshBasicMaterial({ color: SHADOW }), N);
     this.shadows.frustumCulled = false;
@@ -296,7 +297,7 @@ export class Field {
     this.to = FORMATIONS.blank;
     this.formations = { ...FORMATIONS };
     this.toColors = Object.fromEntries(Object.entries(FORMATIONS).map(([k, f]) => [k, f.map((b) => new Color(b.c))]));
-    this.flat = { v: 0 }; this.stave = { v: 0 }; this.home = { x: 0, y: 0 }; this.cardEl = null;
+    this.flat = { v: 0 }; this.musicGround = { v: 0 }; this.home = { x: 0, y: 0 }; this.cardEl = null;
     this.name = 'blank';
     this.delay = FORMATIONS.blank.map((b) => ((b.x - LEFT) / W) * .45 + ((rowY(0) - b.y) / (PITCH * ROWS)) * .55);
     // The name and the number are set left to right, as if typed; everything else sweeps across the sheet.
@@ -388,7 +389,7 @@ export class Field {
     gsap.to(tint, { r: to.r, g: to.g, b: to.b, duration: this.reduced ? 0 : 1.1, ease: 'power2.out', overwrite: 'auto' });
     gsap.to(this.group.rotation, { z: SPIN[name], duration: this.reduced ? 0 : 1.3, ease: 'power3.inOut', overwrite: 'auto' });
     gsap.to(this.flat, { v: name === 'card' ? 1 : 0, duration: this.reduced ? 0 : 1.2, ease: 'power3.inOut', overwrite: 'auto' });
-    gsap.to(this.stave, { v: this.to.spectral || name === 'music' ? 1 : 0, duration: this.reduced ? 0 : 1.4, ease: 'power2.inOut', overwrite: 'auto' });
+    gsap.to(this.musicGround, { v: this.to.spectral || name === 'music' ? 1 : 0, duration: this.reduced ? 0 : 1.4, ease: 'power2.inOut', overwrite: 'auto' });
   }
 
   // Lay the sheet flat behind a DOM element and set the blocks from its parts.
@@ -474,7 +475,7 @@ export class Field {
   frame(delta) {
     if (!this.visible) return;
     const p = this.pointer;
-    const moving = this.progress.t < 1 || p.power > .002 || gsap.isTweening(this.group.rotation) || gsap.isTweening(this.floor.material.uniforms.uTint.value) || gsap.isTweening(this.flat) || gsap.isTweening(this.stave) || gsap.isTweening(this.home) || Boolean(this.paper?.isActive());
+    const moving = this.progress.t < 1 || p.power > .002 || gsap.isTweening(this.group.rotation) || gsap.isTweening(this.floor.material.uniforms.uTint.value) || gsap.isTweening(this.flat) || gsap.isTweening(this.musicGround) || gsap.isTweening(this.home) || Boolean(this.paper?.isActive());
     if ((this.reduced || this.to.spectral) && !moving && !this.dirty) return;
     this.dirty = false;
     this.time += delta / 1000;
@@ -492,9 +493,9 @@ export class Field {
     this.group.position.set(px, py, 0);
     const u = this.floor.material.uniforms, heard = this.reduced ? null : this.audioFrame;
     u.uPointer.value.set(p.x, p.y, p.power);
-    u.uStave.value = this.stave.v;
+    u.uMusic.value = this.musicGround.v;
     u.uLive.value = heard?.[0] ?? 0; u.uLow.value = heard?.[2] ?? 0;
-    u.uHead.value.set(this.head ?? 0, (ROWS * PITCH) / 2, this.head !== null && this.to.spectral ? this.stave.v : 0);
+    u.uHead.value.set(this.head ?? 0, (ROWS * PITCH) / 2, this.head !== null && this.to.spectral ? this.musicGround.v : 0);
     for (let i = 0; i < N; i++) {
       const a = this.from[i], b = this.to[i], s = this.state[i];
       const k = ease(Math.min(Math.max(T - this.delay[i] * spread, 0), 1));

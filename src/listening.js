@@ -1,20 +1,7 @@
-import { cueAt, frameAt, clock, clamp, validateAnalysis, validateLyrics, plateOf, characterOf } from './listening-data.js';
+import { cueAt, frameAt, clock, clamp, validateAnalysis, validateLyrics, characterOf } from './listening-data.js';
 import './listening.css';
 
 const el = (tag, className, text) => { const node = document.createElement(tag); node.className = className; if (text) node.textContent = text; return node; };
-
-// A recording's plate, drawn flat: one column a moment, seven cells a column, the highest band on top.
-// A cell's width is that band's measured level there. Used for the timeline here and the stamp in the collection.
-export function drawPlate(holder, data, columns) {
-  const cols = plateOf(data, columns).map((bands) => {
-    const col = el('i', '');
-    for (let band = 6; band >= 0; band--) col.appendChild(el('b', '')).style.setProperty('--e', bands[band].toFixed(3));
-    return col;
-  });
-  holder.replaceChildren(...cols);
-  holder.style.setProperty('--columns', columns);
-  return cols;
-}
 
 // One media clock drives the transport, verse and spectral sheet. No AudioContext,
 // oscillators or streaming service: playback stays native, including on iOS.
@@ -26,20 +13,18 @@ export function listening(page, { getField, getSheet, motion, getCollection }) {
   const lines = [...page.querySelectorAll('.written-line')];
   const abort = new AbortController();
   let analysis = null, lyrics = null, raf = 0, dead = false, pendingSeek = null;
-  let stanza = -1, active = -2, lastTick = -1, lastDraw = 0, pastCell = -1, installed = false;
+  let stanza = -1, active = -2, lastTick = -1, lastDraw = 0, installed = false;
   // The relief answers the recording only while it sounds: presence rises on Play and falls away on Pause.
   let presence = 0, heard = null, character = null, lastPaint = 0;
   audio.controls = false;
   const play = el('button', 'play', 'Play'); play.type = 'button'; play.setAttribute('aria-label', `Play ${audio.getAttribute('aria-label')}`);
   play.setAttribute('aria-pressed', 'false');
   const transport = el('div', 'transport'), scrub = el('div', 'scrub');
-  const bars = el('span', 'scrub-bars plate'); bars.setAttribute('aria-hidden', 'true');
-  let cells = Array.from({ length: 80 }, () => bars.appendChild(el('i', '')));
-  bars.style.setProperty('--columns', 80);
+  const progress = el('span', 'scrub-line'); progress.setAttribute('aria-hidden', 'true');
   const range = el('input', ''); range.type = 'range'; range.min = 0; range.max = article.dataset.length; range.step = .1; range.value = 0;
   range.setAttribute('aria-label', 'Position in the track');
   const time = el('p', 'time'), now = el('span', 'now', '0:00'), total = el('span', 'total', clock(Number(article.dataset.length)));
-  time.append(now, ' / ', total); scrub.append(bars, range); transport.append(scrub, time);
+  time.append(now, ' / ', total); scrub.append(progress, range); transport.append(scrub, time);
   const sound = el('button', 'sound', 'Sound on'); sound.type = 'button'; sound.setAttribute('aria-label', 'Mute audio'); sound.setAttribute('aria-pressed', 'false');
   const error = el('p', 'player-error'); error.setAttribute('role', 'status'); error.hidden = true;
   player.append(play, transport, sound, error);
@@ -83,8 +68,7 @@ export function listening(page, { getField, getSheet, motion, getCollection }) {
     lastTick = Math.floor(t);
     now.textContent = clock(t); total.textContent = clock(d); range.max = d; range.value = t;
     range.setAttribute('aria-valuetext', `${clock(t)} of ${clock(d)}`);
-    const past = Math.ceil(position * cells.length);
-    if (past !== pastCell) { cells.forEach((cell, i) => cell.classList.toggle('is-past', i < past)); pastCell = past; }
+    scrub.style.setProperty('--position', position);
     paintLyrics(t);
     const field = getField();
     if (analysis && installed) {
@@ -119,6 +103,8 @@ export function listening(page, { getField, getSheet, motion, getCollection }) {
     // The page has two states: at rest the title leads; while the recording sounds, the verse does.
     page.classList.toggle('is-playing', playing);
     page.classList.toggle('is-held', !playing && audio.currentTime > 0 && !audio.ended);
+    const label = page.querySelector('.listening-state');
+    if (label) label.textContent = playing ? 'Now playing' : audio.ended ? 'Played through' : audio.currentTime > 0 ? 'Paused' : 'Ready when you are';
     paint(true); run();
   }
   on(play, 'click', async () => {
@@ -163,7 +149,6 @@ export function listening(page, { getField, getSheet, motion, getCollection }) {
   }
   load(article.dataset.analysis, validateAnalysis).then(data => {
     analysis = data; character = characterOf(data);
-    cells = drawPlate(bars, data, cells.length); pastCell = -1;
     install(0);
   }).catch(() => {}); // Playback and the text remain usable if the optional visual data fails.
   load(article.dataset.lyrics, validateLyrics).then(data => {

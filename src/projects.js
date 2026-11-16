@@ -9,13 +9,14 @@ import '@fontsource/ibm-plex-mono/latin-500.css';
 import './style.css';
 import './projects.css';
 import { gsap } from 'gsap';
-import { listening, drawPlate } from './listening.js';
+import { listening } from './listening.js';
 import { validateAnalysis } from './listening-data.js';
+import './music.css';
 
 const root = document.documentElement;
 const stage = document.querySelector('.stage');
 const motion = window.matchMedia('(prefers-reduced-motion: reduce)');
-const TONE = { apps: 'var(--green)', music: 'var(--violet)' };
+const TONE = { apps: 'var(--green)', music: '#d6ac83' };
 const C = { dim: 0x4a463f, line: 0x8f8879, orange: 0xdd7d45, green: 0x86b890 };
 let reduced = motion.matches;
 let main = document.querySelector('#room');
@@ -39,18 +40,21 @@ function shelf(page) {
     other.addEventListener('pointerenter', (event) => { if (event.pointerType === 'mouse') peek(name); });
     other.addEventListener('pointerleave', (event) => { if (event.pointerType === 'mouse') peek(formation); });
   }
-  // Music: every recording in the list is shown as its plate, the seven measured bands across its length.
-  // The list draws it flat, as a stamp; the sheet raises the same plate for the recording that is chosen
-  // (the first, until another is pointed at or focused). The score stands only until a plate has been read.
+  // A recording gets one full-size sculpture. Pointer/focus chooses it; download order cannot.
+  // Until its data arrives, the collection's fallback formation remains usable.
   const entries = [...page.querySelectorAll('.entry[data-analysis]')], plates = new Map(), caption = page.querySelector('.figure-text');
-  let shown = null, dead = false;
+  let shown = null, requested = entries[0], dead = false;
+  const count = page.querySelector('.recording-count');
+  if (count) count.textContent = String(entries.length).padStart(2, '0');
   const nameOf = (entry) => `recording:${entry.getAttribute('href').replace(/^\.\/|\/$/g, '')}`;
   function raise(entry, duration) {
     const data = plates.get(entry), known = field?.has(nameOf(entry)); // known: raised on an earlier visit to this page
     if ((!data && !known) || dead) return;
     shown = entry;
     entries.forEach((other) => other.classList.toggle('is-shown', other === entry));
-    if (caption) caption.textContent = `${entry.querySelector('.entry-name').textContent}, as a plate: seven bands, start to end.`;
+    if (caption) caption.textContent = entry.querySelector('.entry-name').textContent;
+    const number = page.querySelector('.figure-no');
+    if (number) number.textContent = entry.querySelector('.entry-no')?.textContent ?? '';
     if (!field || !sheet || busy) return;
     if (!known) field.define(nameOf(entry), sheet.spectralSheet(data), 'music');
     field.setCharacter(null); field.select(nameOf(entry), duration);
@@ -61,11 +65,9 @@ function shelf(page) {
       .then((data) => {
         if (dead) return;
         plates.set(entry, validateAnalysis(data));
-        const stamp = entry.querySelector('.entry-plate');
-        if (stamp) drawPlate(stamp, data, 64);
-        if (!shown && entry === entries.find((e) => plates.has(e))) raise(entry, 1.3);
+        if (entry === requested) raise(entry, 1.3);
       }).catch(() => {}); // without its analysis an entry is still a link, and the sheet keeps the score
-    const look = () => { if (entry !== shown) raise(entry); };
+    const look = () => { requested = entry; if (entry !== shown) raise(entry); };
     entry.addEventListener('pointerenter', (event) => { if (event.pointerType === 'mouse') look(); });
     entry.addEventListener('focus', look);
   }
@@ -74,8 +76,8 @@ function shelf(page) {
   return {
     set(duration) {
       field.setSlot(slot); field.setHead(null); field.setAudioFrame(null);
-      const first = shown ?? entries.find((entry) => field.has(nameOf(entry)));
-      if (first) raise(first, duration); else field.select(formation, duration);
+      const first = requested ?? shown;
+      if (first && (plates.has(first) || field.has(nameOf(first)))) raise(first, duration); else field.select(formation, duration);
     },
     destroy() { dead = true; },
   };
@@ -274,7 +276,7 @@ function mount(duration) {
 function enter() {
   if (reduced) { gsap.set(main, { opacity: 1 }); return; }
   gsap.set(main, { opacity: 1 });
-  const parts = main.querySelectorAll('.lede, .show-head > *, .listen-head > *, .live-lyrics, .viewer, .show-body > *, .player, .full-lyrics, .tracks, .rooms li, .figure');
+  const parts = main.querySelectorAll('.music-heading > *, .recordings, .music-foot, .lede, .show-head > *, .listen-head > *, .live-lyrics, .viewer, .show-body > *, .player, .full-lyrics, .tracks, .rooms li, .figure');
   gsap.from(parts, { opacity: 0, y: 12, duration: .6, stagger: .035, ease: 'power3.out', clearProps: 'opacity,transform' });
 }
 const pages = new Map();

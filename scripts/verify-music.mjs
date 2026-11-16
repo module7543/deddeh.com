@@ -17,15 +17,22 @@ try {
     assert(await page.locator('audio').evaluate(a=>a.paused));
     assert((await page.locator('audio').evaluate(a=>a.currentSrc)).includes('/deddeh.com/audio/'));
     const play=page.locator('.play');
-    // The timeline is the recording's plate: 80 moments of seven measured bands. Nothing links to other songs while there is one.
-    await expect(page.locator('.scrub-bars b')).toHaveCount(560);
+    // The timeline is one continuous line; the artwork has no miniature duplicates.
+    await expect(page.locator('.scrub-line')).toHaveCount(1);
+    await expect(page.locator('.scrub-bars, .plate')).toHaveCount(0);
     await expect(page.locator('.tracks')).toHaveCount(0);
     await expect(page.locator('#room')).not.toHaveClass(/is-playing|is-held/);
     await play.click();await page.waitForFunction(()=>document.querySelector('audio').currentTime>.5);
     await expect(page.locator('#room')).toHaveClass(/is-playing/); // the page's playing state
-    await expect(page.locator('.scrub-bars i.is-past').first()).toBeVisible();
+    assert(await page.locator('.scrub').evaluate(el => Number(el.style.getPropertyValue('--position')) > 0));
+    await expect(page.locator('.listening-state')).toHaveText('Now playing');
+    await page.getByRole('button', {name: 'Mute audio', exact: true}).click();
+    assert(await page.locator('audio').evaluate(a => a.muted));
+    await page.getByRole('button', {name: 'Unmute audio', exact: true}).click();
+    assert(!(await page.locator('audio').evaluate(a => a.muted)));
     await play.click();
     await expect(page.locator('#room')).toHaveClass(/is-held/);
+    await expect(page.locator('.listening-state')).toHaveText('Paused');
     await expect(page.locator('#room')).not.toHaveClass(/is-playing/);
     const paused=await page.locator('audio').evaluate(a=>a.currentTime);
     await page.waitForTimeout(250);
@@ -58,8 +65,9 @@ try {
     // Browser history and destruction: leaving an active track must stop it.
     await play.click();await page.locator('.return').click();
     await expect(page.locator('.setlist .entry')).toHaveCount(1);
-    // The collection lists the recording with its plate as a stamp and names it under the sheet.
-    await expect(page.locator('.entry-plate b')).toHaveCount(448);
+    // The collection names the selected full-size artwork, without miniature plates.
+    await expect(page.locator('.entry-plate')).toHaveCount(0);
+    await expect(page.locator('.music-heading h1')).toHaveText('Music.');
     await expect(page.locator('.setlist .entry')).toHaveClass(/is-shown/);
     await expect(page.locator('.figure-text')).toContainText('Sweet on My Tongue');
     assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));
@@ -100,7 +108,7 @@ try {
   const rested = await scene.locator('.sheet-slot').screenshot(); await scene.waitForTimeout(350);
   assert(rested.equals(await scene.locator('.sheet-slot').screenshot()), 'Paused relief settles and is still');
   // With a second entry in the collection (served to this test only), the song page links to it by itself.
-  await scene.route('**/projects/music/', async route => { const r = await route.fetch(); route.fulfill({ response: r, body: (await r.text()).replace('</ol>\n              </div>', '<li><a class="entry" href="./test-only/" data-room><span class="entry-no">02</span><span class="entry-name">Test Only</span></a></li></ol>\n              </div>') }); });
+  await scene.route('**/projects/music/', async route => { const r = await route.fetch(); route.fulfill({ response: r, body: (await r.text()).replace(/(<ol class="setlist">[\s\S]*?)(<\/ol>)/, '$1<li><a class="entry" href="./test-only/" data-room><span class="entry-no">02</span><span class="entry-name">Test Only</span></a></li>$2') }); });
   await scene.reload();
   await expect(scene.locator('.tracks .track-step[rel="next"]')).toHaveAttribute('href', '../test-only/');
   await expect(scene.locator('.tracks .track-step[rel="prev"]')).toHaveCount(0);

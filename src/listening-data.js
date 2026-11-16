@@ -18,7 +18,7 @@ export function validateLyrics(data) {
   return data;
 }
 // A recording's plate: its seven bands across its whole length, in as many columns as asked for.
-// The same measurement is read three ways: a stamp in the collection, the relief on the sheet, the timeline under it.
+// Retained as a reusable analysis utility; the interface no longer repeats miniature plates.
 export function plateOf(data, columns) {
   return Array.from({ length: columns }, (_, i) => {
     const start = Math.floor(i / columns * data.frames.length), end = Math.max(start + 1, Math.floor((i + 1) / columns * data.frames.length));
