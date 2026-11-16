@@ -12,7 +12,9 @@
     "test": "vitest run",
     "build:pages": "vite build --base=/deddeh.com/",
     "verify:pages": "node scripts/verify-pages.mjs",
-    "verify:music": "node scripts/verify-music.mjs"
+    "verify:music": "node scripts/verify-music.mjs",
+    "verify:music-design": "node scripts/verify-music-design.mjs",
+    "package:music-preview": "npm run build:pages && node scripts/package-music-preview.mjs"
   },
   "dependencies": {
     "@fontsource-variable/archivo": "^5.3.0",

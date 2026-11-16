@@ -1,11 +1,11 @@
-import { cueAt, frameAt, clock, clamp, validateAnalysis, validateLyrics } from './listening-data.js';
+import { cueAt, frameAt, clock, clamp, validateAnalysis, validateLyrics, characterOf } from './listening-data.js';
 import './listening.css';
 
 const el = (tag, className, text) => { const node = document.createElement(tag); node.className = className; if (text) node.textContent = text; return node; };
 
 // One media clock drives the transport, verse and spectral sheet. No AudioContext,
 // oscillators or streaming service: playback stays native, including on iOS.
-export function listening(page, { getField, getSheet, motion }) {
+export function listening(page, { getField, getSheet, motion, getCollection }) {
   const article = page.querySelector('.listen'), slot = page.querySelector('.sheet-slot');
   const audio = page.querySelector('audio'), player = page.querySelector('.player');
   const live = page.querySelector('.live-lyrics'), verse = page.querySelector('.live-verse');
@@ -13,17 +13,18 @@ export function listening(page, { getField, getSheet, motion }) {
   const lines = [...page.querySelectorAll('.written-line')];
   const abort = new AbortController();
   let analysis = null, lyrics = null, raf = 0, dead = false, pendingSeek = null;
-  let stanza = -1, active = -2, lastTick = -1, lastDraw = 0, pastCell = -1, installed = false;
+  let stanza = -1, active = -2, lastTick = -1, lastDraw = 0, installed = false;
+  // The relief answers the recording only while it sounds: presence rises on Play and falls away on Pause.
+  let presence = 0, heard = null, character = null, lastPaint = 0;
   audio.controls = false;
   const play = el('button', 'play', 'Play'); play.type = 'button'; play.setAttribute('aria-label', `Play ${audio.getAttribute('aria-label')}`);
   play.setAttribute('aria-pressed', 'false');
   const transport = el('div', 'transport'), scrub = el('div', 'scrub');
-  const bars = el('span', 'scrub-bars'); bars.setAttribute('aria-hidden', 'true');
-  const cells = Array.from({ length: 80 }, () => bars.appendChild(el('i', '')));
+  const progress = el('span', 'scrub-line'); progress.setAttribute('aria-hidden', 'true');
   const range = el('input', ''); range.type = 'range'; range.min = 0; range.max = article.dataset.length; range.step = .1; range.value = 0;
   range.setAttribute('aria-label', 'Position in the track');
   const time = el('p', 'time'), now = el('span', 'now', '0:00'), total = el('span', 'total', clock(Number(article.dataset.length)));
-  time.append(now, ' / ', total); scrub.append(bars, range); transport.append(scrub, time);
+  time.append(now, ' / ', total); scrub.append(progress, range); transport.append(scrub, time);
   const sound = el('button', 'sound', 'Sound on'); sound.type = 'button'; sound.setAttribute('aria-label', 'Mute audio'); sound.setAttribute('aria-pressed', 'false');
   const error = el('p', 'player-error'); error.setAttribute('role', 'status'); error.hidden = true;
   player.append(play, transport, sound, error);
@@ -67,29 +68,44 @@ export function listening(page, { getField, getSheet, motion }) {
     lastTick = Math.floor(t);
     now.textContent = clock(t); total.textContent = clock(d); range.max = d; range.value = t;
     range.setAttribute('aria-valuetext', `${clock(t)} of ${clock(d)}`);
-    const past = Math.ceil(position * cells.length);
-    if (past !== pastCell) { cells.forEach((cell, i) => cell.classList.toggle('is-past', i < past)); pastCell = past; }
+    scrub.style.setProperty('--position', position);
     paintLyrics(t);
     const field = getField();
     if (analysis && installed) {
+      const playing = !audio.paused && !audio.ended, clockNow = performance.now();
+      const dt = force || !lastPaint ? 0 : Math.min((clockNow - lastPaint) / 1000, .1);
+      lastPaint = clockNow;
+      const target = frameAt(analysis, t), toward = (rate) => (dt ? 1 - Math.exp(-dt / rate) : 0);
+      // Quick to rise and slower to fall, at rates the recording's own character sets.
+      heard = heard && dt ? heard.map((v, i) => v + (target[i] - v) * toward(target[i] > v ? character.rise : character.fall)) : heard ?? target;
+      if (reduced) presence = 0;
+      else {
+        presence += ((playing ? 1 : 0) - presence) * toward(playing ? .3 : .45);
+        if (!playing && presence < .004) presence = 0;
+      }
       field?.setHead(position);
-      field?.setAudioFrame(reduced ? null : frameAt(analysis, t));
+      field?.setAudioFrame(reduced ? null : heard.map(v => v * presence));
     }
   }
   function stop() { cancelAnimationFrame(raf); raf = 0; }
   function tick(timestamp) {
     if (timestamp - lastDraw >= 1000 / 30) { paint(); lastDraw = timestamp; }
-    if (!audio.paused && !audio.ended && !document.hidden && !dead) raf = requestAnimationFrame(tick);
+    if ((sounding() || presence > 0) && !document.hidden && !dead) raf = requestAnimationFrame(tick);
     else raf = 0;
   }
-  function run() { if (!raf && !audio.paused && !document.hidden) raf = requestAnimationFrame(tick); }
+  const sounding = () => !audio.paused && !audio.ended;
+  function run() { if (!raf && (sounding() || presence > 0) && !document.hidden) raf = requestAnimationFrame(tick); }
   function state() {
     const playing = !audio.paused && !audio.ended;
     play.textContent = playing ? 'Pause' : audio.ended ? 'Replay' : 'Play';
     play.setAttribute('aria-label', `${playing ? 'Pause' : audio.ended ? 'Replay' : 'Play'} ${audio.getAttribute('aria-label')}`);
     play.setAttribute('aria-pressed', String(playing)); player.classList.toggle('is-playing', playing);
-    if (playing) run(); else stop();
-    paint(true);
+    // The page has two states: at rest the title leads; while the recording sounds, the verse does.
+    page.classList.toggle('is-playing', playing);
+    page.classList.toggle('is-held', !playing && audio.currentTime > 0 && !audio.ended);
+    const label = page.querySelector('.listening-state');
+    if (label) label.textContent = playing ? 'Now playing' : audio.ended ? 'Played through' : audio.currentTime > 0 ? 'Paused' : 'Ready when you are';
+    paint(true); run();
   }
   on(play, 'click', async () => {
     if (!audio.paused) { audio.pause(); return; }
@@ -132,12 +148,7 @@ export function listening(page, { getField, getSheet, motion }) {
     return validate(await response.json());
   }
   load(article.dataset.analysis, validateAnalysis).then(data => {
-    analysis = data;
-    cells.forEach((cell, i) => {
-      const start = Math.floor(i / cells.length * data.frames.length), end = Math.max(start + 1, Math.floor((i + 1) / cells.length * data.frames.length));
-      const level = data.frames.slice(start, end).reduce((sum, f) => sum + f[0], 0) / (end - start) / 255;
-      cell.style.height = `${5 + level * 29}px`;
-    });
+    analysis = data; character = characterOf(data);
     install(0);
   }).catch(() => {}); // Playback and the text remain usable if the optional visual data fails.
   load(article.dataset.lyrics, validateLyrics).then(data => {
@@ -159,12 +170,28 @@ export function listening(page, { getField, getSheet, motion }) {
       installed = true;
       const name = `recording:${article.dataset.track}`;
       field.define(name, sheet.spectralSheet(analysis), 'music'); field.select(name, duration);
-    } else if (!analysis) field.select('blank', duration);
+      field.setCharacter(character);
+    } else if (!analysis) field.select(field.has(`recording:${article.dataset.track}`) ? `recording:${article.dataset.track}` : 'blank', duration); // already set by the collection
     field.setSlot(slot); paint(true);
   }
+  // The songs on either side, read from the collection's own list, so a new recording needs no links written here.
+  getCollection?.().then((doc) => {
+    if (dead) return;
+    const list = [...doc.querySelectorAll('.setlist .entry')], here = list.findIndex(a => a.getAttribute('href').replace(/^\.\/|\/$/g, '') === article.dataset.track);
+    const steps = [[here - 1, 'prev', 'Previous'], [here + 1, 'next', 'Next']].filter(([i]) => here >= 0 && list[i]);
+    if (!steps.length) return;
+    const nav = el('nav', 'tracks'); nav.setAttribute('aria-label', 'More recordings');
+    for (const [i, rel, label] of steps) {
+      const link = el('a', 'track-step'); link.href = `../${list[i].getAttribute('href').replace(/^\.\//, '')}`; link.rel = rel; link.dataset.room = '';
+      link.append(el('span', 'track-step-label', label), el('span', 'track-step-no', list[i].querySelector('.entry-no')?.textContent ?? ''), el('span', 'track-step-title', list[i].querySelector('.entry-name')?.textContent ?? ''));
+      link.querySelector('.track-step-no').setAttribute('aria-hidden', 'true');
+      nav.append(link);
+    }
+    article.append(nav);
+  }).catch(() => {});
   paint(true);
   return {
     set: install,
-    destroy() { dead = true; abort.abort(); stop(); audio.pause(); audio.removeAttribute('src'); audio.load(); getField()?.setHead(null); getField()?.setAudioFrame(null); },
+    destroy() { dead = true; abort.abort(); stop(); page.classList.remove('is-playing', 'is-held'); audio.pause(); audio.removeAttribute('src'); audio.load(); getField()?.setHead(null); getField()?.setAudioFrame(null); },
   };
 }

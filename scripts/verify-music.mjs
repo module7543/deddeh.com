@@ -17,8 +17,23 @@ try {
     assert(await page.locator('audio').evaluate(a=>a.paused));
     assert((await page.locator('audio').evaluate(a=>a.currentSrc)).includes('/deddeh.com/audio/'));
     const play=page.locator('.play');
+    // The timeline is one continuous line; the artwork has no miniature duplicates.
+    await expect(page.locator('.scrub-line')).toHaveCount(1);
+    await expect(page.locator('.scrub-bars, .plate')).toHaveCount(0);
+    await expect(page.locator('.tracks')).toHaveCount(0);
+    await expect(page.locator('#room')).not.toHaveClass(/is-playing|is-held/);
     await play.click();await page.waitForFunction(()=>document.querySelector('audio').currentTime>.5);
+    await expect(page.locator('#room')).toHaveClass(/is-playing/); // the page's playing state
+    assert(await page.locator('.scrub').evaluate(el => Number(el.style.getPropertyValue('--position')) > 0));
+    await expect(page.locator('.listening-state')).toHaveText('Now playing');
+    await page.getByRole('button', {name: 'Mute audio', exact: true}).click();
+    assert(await page.locator('audio').evaluate(a => a.muted));
+    await page.getByRole('button', {name: 'Unmute audio', exact: true}).click();
+    assert(!(await page.locator('audio').evaluate(a => a.muted)));
     await play.click();
+    await expect(page.locator('#room')).toHaveClass(/is-held/);
+    await expect(page.locator('.listening-state')).toHaveText('Paused');
+    await expect(page.locator('#room')).not.toHaveClass(/is-playing/);
     const paused=await page.locator('audio').evaluate(a=>a.currentTime);
     await page.waitForTimeout(250);
     assert.equal(await page.locator('audio').evaluate(a=>a.currentTime),paused);
@@ -50,6 +65,13 @@ try {
     // Browser history and destruction: leaving an active track must stop it.
     await play.click();await page.locator('.return').click();
     await expect(page.locator('.setlist .entry')).toHaveCount(1);
+    // The collection names the selected full-size artwork, without miniature plates.
+    await expect(page.locator('.entry-plate')).toHaveCount(0);
+    await expect(page.locator('.music-heading h1')).toHaveText('Music.');
+    await expect(page.locator('.setlist .entry')).toHaveClass(/is-shown/);
+    await expect(page.locator('.figure-text')).toContainText('Sweet on My Tongue');
+    assert(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth));
+    await page.screenshot({path:`artifacts/music-${mobile?'mobile':'desktop'}.png`,fullPage:true});
     await page.goBack();await expect(page.locator('.play')).toHaveAttribute('aria-pressed','false');
     await page.emulateMedia({reducedMotion:'reduce'});
     await page.locator('audio').evaluate(a=>{a.currentTime=125});
@@ -81,6 +103,15 @@ try {
   await scene.locator('.play').click(); await scene.waitForTimeout(500);
   const first = await scene.locator('.sheet-slot').screenshot(); await scene.waitForTimeout(500);
   assert(!first.equals(await scene.locator('.sheet-slot').screenshot()), 'Actual playback changes the relief');
+  // On Pause the relief falls back to the resting plate and is still again.
+  await scene.locator('.play').click(); await scene.waitForTimeout(3000);
+  const rested = await scene.locator('.sheet-slot').screenshot(); await scene.waitForTimeout(350);
+  assert(rested.equals(await scene.locator('.sheet-slot').screenshot()), 'Paused relief settles and is still');
+  // With a second entry in the collection (served to this test only), the song page links to it by itself.
+  await scene.route('**/projects/music/', async route => { const r = await route.fetch(); route.fulfill({ response: r, body: (await r.text()).replace(/(<ol class="setlist">[\s\S]*?)(<\/ol>)/, '$1<li><a class="entry" href="./test-only/" data-room><span class="entry-no">02</span><span class="entry-name">Test Only</span></a></li>$2') }); });
+  await scene.reload();
+  await expect(scene.locator('.tracks .track-step[rel="next"]')).toHaveAttribute('href', '../test-only/');
+  await expect(scene.locator('.tracks .track-step[rel="prev"]')).toHaveCount(0);
   await scene.close();
   const noGL = await browser.newPage();
   await noGL.addInitScript(() => { HTMLCanvasElement.prototype.getContext = () => null; });
@@ -90,6 +121,6 @@ try {
   await noGL.locator('audio').evaluate(a => { a.currentTime = 125; });
   await expect(noGL.locator('.lyric-line.is-current')).toHaveText('Sweet on my tongue');
   await noGL.close();
-  console.log('PASS frozen/moving relief and WebGL/analysis failure fallback');
+  console.log('PASS frozen/moving/settled relief, derived next link and WebGL/analysis failure fallback');
 
 } finally { await browser.close(); }

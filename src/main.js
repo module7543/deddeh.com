@@ -15,7 +15,7 @@ const SECTIONS = {
 // Projects holds collections. With Projects chosen, each one previews its own setting of the sheet.
 const COLLECTIONS = {
   apps: { accent: 'var(--green)', statement: 'Software I build for my own use. A few pieces are open to try; most are private.', no: 'Fig. 2a', figure: 'The sheet, set as a window.' },
-  music: { accent: 'var(--violet)', statement: 'Songs I make with Suno, to listen to here.', no: 'Fig. 2b', figure: 'The sheet, set as a score.' },
+  music: { accent: 'var(--violet)', statement: 'Music I make, to listen to here.', no: 'Fig. 2b', figure: 'The sheet, set as a score.' },
 };
 const WRITING_CARD = { accent: 'var(--orange)', statement: 'A few lines, and they come straight to me.', no: 'Fig. 3', figure: 'The postcard, laid flat to write on.' };
 let posted = null; // set once Formspree has acknowledged a message
