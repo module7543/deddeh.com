@@ -9,7 +9,8 @@ permissions:
 jobs:
   validate:
     name: PR validation
-    runs-on: ubuntu-latest
+    # Match the operating systems supported by the pinned Playwright 1.56 browser.
+    runs-on: ubuntu-24.04
     steps:
       - name: Check out source
         uses: actions/checkout@v4
@@ -28,3 +29,10 @@ jobs:
         run: npm test
       - name: Build for the repository Pages path
         run: npm run build:pages
+      - name: Install browser for reading checks
+        run: npx playwright install --with-deps chromium
+      - name: Verify the reading experience
+        run: |
+          npm run preview -- --port 4178 --strictPort --base=/deddeh.com/ > /tmp/deddeh-preview.log 2>&1 &
+          curl --retry 10 --retry-connrefused --retry-delay 1 --fail --silent --output /dev/null http://localhost:4178/deddeh.com/writing/the-margin/
+          PREVIEW_URL=http://localhost:4178/deddeh.com/ npm run verify:reading

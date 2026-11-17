@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { readReadingMode, applyReadingMode, initReadingMode } from '../src/reading-mode.js';
 
-let listeners, narrow;
+let listeners;
 beforeEach(() => {
   document.documentElement.className = 'paper';
   delete document.documentElement.dataset.readingMode;
@@ -10,8 +10,6 @@ beforeEach(() => {
   document.documentElement.style.setProperty('--reading-ink', '#201e1b');
   localStorage.clear();
   listeners = vi.spyOn(window, 'addEventListener');
-  narrow = { matches: false, addEventListener: vi.fn() };
-  vi.spyOn(window, 'matchMedia').mockReturnValue(narrow);
 });
 afterEach(() => {
   for (const [type, callback] of listeners.mock.calls) window.removeEventListener(type, callback);
@@ -19,7 +17,6 @@ afterEach(() => {
   vi.useRealTimers();
 });
 const button = (mode = 'ink') => document.querySelector(`[data-mode="${mode}"]`);
-const compact = () => document.querySelector('.mode-switch');
 
 describe('Writing reading preference', () => {
   it('defaults to Paper and ignores an unknown stored value', () => {
@@ -64,31 +61,6 @@ describe('Writing reading preference', () => {
     button('ink').click();
     vi.advanceTimersByTime(100);
     expect(document.documentElement.classList.contains('is-switching-mode')).toBe(false);
-  });
-  it('names the compact action for its destination and retains focus in both directions', () => {
-    initReadingMode();
-    compact().focus();
-    for (const [name, mode] of [['dark', 'ink'], ['light', 'paper']]) {
-      expect(compact().getAttribute('aria-label')).toBe(`Switch to ${name} reading mode`);
-      expect(compact().hasAttribute('aria-pressed')).toBe(false);
-      compact().click();
-      expect(document.documentElement.dataset.readingMode).toBe(mode);
-      expect(localStorage.getItem('deddeh:reading-mode')).toBe(mode);
-      expect(document.activeElement).toBe(compact());
-    }
-  });
-  it('moves focus to the visible equivalent on resize without changing the preference', () => {
-    initReadingMode();
-    const resize = narrow.addEventListener.mock.calls[0][1];
-    button('ink').focus(); button('ink').click();
-    narrow.matches = true; resize();
-    expect(document.activeElement).toBe(compact());
-    narrow.matches = false; resize();
-    expect(document.activeElement).toBe(button('ink'));
-    expect(localStorage.getItem('deddeh:reading-mode')).toBe('ink');
-    document.querySelector('.return').focus();
-    narrow.matches = true; resize();
-    expect(document.activeElement).toBe(document.querySelector('.return'));
   });
   it('keeps switching and retains the current choice on pageshow when storage access throws', () => {
     vi.spyOn(Storage.prototype, 'getItem').mockImplementation(() => { throw new Error('Denied'); });

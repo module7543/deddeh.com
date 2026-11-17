@@ -1,6 +1,7 @@
 import { defineConfig } from 'vite';
 import { existsSync, readdirSync, readFileSync } from 'node:fs';
 import { readReadingMode, applyReadingMode } from './src/reading-mode.js';
+import { readReadingSize, applyReadingSize } from './src/reading-size.js';
 
 // Every folder under writing/ with an index.html is an essay with its own address.
 const essays = readdirSync('writing', { withFileTypes: true })
@@ -24,7 +25,7 @@ export default defineConfig({
         // Shared by current and future essays. Ordinary inline scripts run before module
         // downloads, including in the proof-measurement iframe. No JS means Paper.
         return [{ tag: 'style', children: readFileSync('src/reading-palette.css', 'utf8'), injectTo: 'head' },
-          { tag: 'script', children: `(${applyReadingMode.toString()})((${readReadingMode.toString()})());`, injectTo: 'head' }];
+          { tag: 'script', children: `(${applyReadingMode.toString()})((${readReadingMode.toString()})());(${applyReadingSize.toString()})((${readReadingSize.toString()})());`, injectTo: 'head' }];
       },
     },
   }],

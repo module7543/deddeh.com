@@ -1,5 +1,5 @@
-// An essay's page. It is plain HTML and CSS and reads without this file, which only joins the page to the index:
-// the blocks that were set as its lines dissolve into its words on arrival, and the paper darkens on the way back.
+// The essay reads without JavaScript. This adds reader preferences and joins it to the index:
+// the blocks dissolve into words on arrival, and the paper darkens on the way back.
 import '@fontsource-variable/archivo/wdth.css';
 import '@fontsource/instrument-serif/latin-400-italic.css';
 import '@fontsource/ibm-plex-mono/latin-400.css';
@@ -8,7 +8,7 @@ import '@fontsource-variable/newsreader/opsz.css';
 import '@fontsource-variable/newsreader/opsz-italic.css';
 import './style.css';
 import './article.css';
-import { initReadingMode } from './reading-mode.js';
+import { initReadingPreferences } from './reading-preferences.js';
 
 const root = document.documentElement;
 const motion = window.matchMedia('(prefers-reduced-motion: reduce)');
@@ -17,7 +17,7 @@ const motion = window.matchMedia('(prefers-reduced-motion: reduce)');
 function arrive() {
   let proof = null;
   try { proof = JSON.parse(sessionStorage.getItem('deddeh:proof')); sessionStorage.removeItem('deddeh:proof'); } catch { /* storage unavailable */ }
-  const fresh = proof && (proof.mode || 'paper') === root.dataset.readingMode && Date.now() - proof.at < 4000 && proof.w === window.innerWidth && proof.h === window.innerHeight && window.scrollY === 0;
+  const fresh = proof && (proof.size || 'original') === root.dataset.readingSize && (proof.mode || 'paper') === root.dataset.readingMode && Date.now() - proof.at < 4000 && proof.w === window.innerWidth && proof.h === window.innerHeight && window.scrollY === 0;
   if (fresh && !motion.matches && root.classList.contains('from-proof')) {
     const layer = document.createElement('div');
     layer.className = 'proof-bars';
@@ -47,7 +47,7 @@ function leave(event) {
 }
 
 if (window === window.top) { // not when the index is laying this page out to measure it
-  initReadingMode();
+  initReadingPreferences();
   arrive();
   document.addEventListener('click', leave);
   // The Back button can restore this page as it was left.
