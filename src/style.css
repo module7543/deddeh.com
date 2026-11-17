@@ -1,3 +1,5 @@
+@import './reading-palette.css';
+
 :root {
   color-scheme: dark;
   --bg: #141311;
@@ -180,11 +182,13 @@ ol { padding: 0; list-style: none; }
 .proof-frame { position: fixed; inset: 0; z-index: -1; width: 100%; height: 100%; border: 0; opacity: 0; pointer-events: none; }
 .top { transition: color .4s .2s, border-color .4s .2s; }
 .is-proofing #index, .is-proofing .noscript-note { opacity: 0; pointer-events: none; transition: opacity .22s; }
-.is-proofing .top { color: #1b1916; border-bottom-color: #cfc7b5; }
-.is-proofing .marks span:not(.is-on) { background: #cfc7b5; transition-delay: .2s; }
+.is-proofing { --proof-bg: var(--reading-paper); --proof-ink: var(--reading-paper-text); --proof-rule: var(--reading-paper-rule); }
+.is-proofing[data-proof-mode='ink'] { --proof-bg: var(--reading-ink); --proof-ink: var(--reading-ink-text); --proof-rule: var(--reading-ink-rule); }
+.is-proofing .top { color: var(--proof-ink); border-bottom-color: var(--proof-rule); }
+.is-proofing .marks span:not(.is-on) { background: var(--proof-rule); transition-delay: .2s; }
 /* Without WebGL there are no blocks to set: the ground simply turns to paper. */
-html.is-proofing:not(.has-field), .is-proofing:not(.has-field) body { background: #ece6d8; transition: background-color .34s; }
-.is-proofing:not(.has-field) .stage { opacity: 0; transition: opacity .3s; }
+html.is-proofing:is(:not(.has-field), .is-proof-fallback), .is-proofing:is(:not(.has-field), .is-proof-fallback) body { background: var(--proof-bg); transition: background-color .34s; }
+.is-proofing:is(:not(.has-field), .is-proof-fallback) .stage { opacity: 0; transition: opacity .3s; }
 @media (prefers-reduced-motion: reduce) {
   .essays, .essay-title, .essay-go, .top { transition: none; }
 }
