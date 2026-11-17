@@ -1,0 +1,275 @@
+{
+  "contrast": {
+    "paper": {
+      ".identity": 14.1,
+      ".return": 14.1,
+      ".reading-mode": 5.17,
+      ".essay h1": 14.1,
+      ".essay h1 mark": 6.44,
+      ".dek": 14.1,
+      ".meta dt": 5.17,
+      ".meta dd": 14.1,
+      ".prose": 14.1,
+      ".lead": 14.1,
+      ".prose h2": 14.1,
+      ".section-no": 5.41,
+      ".prose a": 14.1,
+      ".ref": 5.41,
+      ".note": 5.17,
+      ".note em": 14.1,
+      ".slug": 4.52,
+      ".slug-text": 5.17,
+      ".pull p": 14.1,
+      ".figure": 5.17,
+      ".figure-no": 5.41
+    },
+    "ink": {
+      ".identity": 11.39,
+      ".return": 11.39,
+      ".reading-mode": 6.57,
+      ".essay h1": 11.39,
+      ".essay h1 mark": 8.11,
+      ".dek": 11.39,
+      ".meta dt": 6.57,
+      ".meta dd": 11.39,
+      ".prose": 11.39,
+      ".lead": 11.39,
+      ".prose h2": 11.39,
+      ".section-no": 7.69,
+      ".prose a": 11.39,
+      ".ref": 7.69,
+      ".note": 6.57,
+      ".note em": 11.39,
+      ".slug": 6.77,
+      ".slug-text": 6.57,
+      ".pull p": 11.39,
+      ".figure": 6.57,
+      ".figure-no": 7.69
+    }
+  },
+  "controls": {
+    "desktop-paper": {
+      "labelAndIcon": [
+        6.34,
+        5.17
+      ],
+      "selectionRule": [
+        {
+          "fill": 3.74,
+          "page": 4.09
+        }
+      ],
+      "focus": [
+        5.41,
+        5.41
+      ]
+    },
+    "desktop-ink": {
+      "labelAndIcon": [
+        6.57,
+        6.69
+      ],
+      "selectionRule": [
+        {
+          "fill": 3.08,
+          "page": 3.16
+        }
+      ],
+      "focus": [
+        7.69,
+        7.69
+      ]
+    },
+    "mobile-paper": {
+      "labelAndIcon": [
+        6.34
+      ],
+      "selectionRule": [
+        {
+          "fill": 3.74,
+          "page": 4.09
+        }
+      ],
+      "focus": [
+        5.41
+      ]
+    },
+    "mobile-ink": {
+      "labelAndIcon": [
+        6.69
+      ],
+      "selectionRule": [
+        {
+          "fill": 3.08,
+          "page": 3.16
+        }
+      ],
+      "focus": [
+        7.69
+      ]
+    }
+  },
+  "baseline": [
+    "desktop paper: geometry and pixels below proof label identical to d4235ec7edcff3c781da81001979f805cc792af7",
+    "desktop ink: geometry and pixels below proof label identical to d4235ec7edcff3c781da81001979f805cc792af7",
+    "mobile paper: geometry and pixels below proof label identical to d4235ec7edcff3c781da81001979f805cc792af7",
+    "mobile ink: geometry and pixels below proof label identical to d4235ec7edcff3c781da81001979f805cc792af7"
+  ],
+  "history": [
+    {
+      "mode": "paper",
+      "persisted": true
+    },
+    {
+      "mode": "ink",
+      "persisted": true
+    }
+  ],
+  "targets": [
+    {
+      "width": 320,
+      "targets": [
+        {
+          "name": "Switch to dark reading mode",
+          "x": 172.71875,
+          "y": 7.5,
+          "width": 44,
+          "height": 44,
+          "top": 7.5,
+          "right": 216.71875,
+          "bottom": 51.5,
+          "left": 172.71875
+        }
+      ]
+    },
+    {
+      "width": 360,
+      "targets": [
+        {
+          "name": "Switch to dark reading mode",
+          "x": 212.71875,
+          "y": 7.5,
+          "width": 44,
+          "height": 44,
+          "top": 7.5,
+          "right": 256.71875,
+          "bottom": 51.5,
+          "left": 212.71875
+        }
+      ]
+    },
+    {
+      "width": 390,
+      "targets": [
+        {
+          "name": "Switch to dark reading mode",
+          "x": 242.71875,
+          "y": 7.5,
+          "width": 44,
+          "height": 44,
+          "top": 7.5,
+          "right": 286.71875,
+          "bottom": 51.5,
+          "left": 242.71875
+        }
+      ]
+    },
+    {
+      "width": 600,
+      "targets": [
+        {
+          "name": "Switch to dark reading mode",
+          "x": 452.71875,
+          "y": 7.5,
+          "width": 44,
+          "height": 44,
+          "top": 7.5,
+          "right": 496.71875,
+          "bottom": 51.5,
+          "left": 452.71875
+        }
+      ]
+    },
+    {
+      "width": 601,
+      "targets": [
+        {
+          "name": "Light",
+          "x": 204.109375,
+          "y": 7.5,
+          "width": 85,
+          "height": 44,
+          "top": 7.5,
+          "right": 289.109375,
+          "bottom": 51.5,
+          "left": 204.109375
+        },
+        {
+          "name": "Dark",
+          "x": 293.109375,
+          "y": 7.5,
+          "width": 76.609375,
+          "height": 44,
+          "top": 7.5,
+          "right": 369.71875,
+          "bottom": 51.5,
+          "left": 293.109375
+        }
+      ]
+    },
+    {
+      "width": 768,
+      "targets": [
+        {
+          "name": "Light",
+          "x": 366.546875,
+          "y": 7.5,
+          "width": 85,
+          "height": 44,
+          "top": 7.5,
+          "right": 451.546875,
+          "bottom": 51.5,
+          "left": 366.546875
+        },
+        {
+          "name": "Dark",
+          "x": 455.546875,
+          "y": 7.5,
+          "width": 76.609375,
+          "height": 44,
+          "top": 7.5,
+          "right": 532.15625,
+          "bottom": 51.5,
+          "left": 455.546875
+        }
+      ]
+    },
+    {
+      "width": 1100,
+      "targets": [
+        {
+          "name": "Light",
+          "x": 682.453125,
+          "y": 13.5,
+          "width": 85,
+          "height": 44,
+          "top": 13.5,
+          "right": 767.453125,
+          "bottom": 57.5,
+          "left": 682.453125
+        },
+        {
+          "name": "Dark",
+          "x": 771.453125,
+          "y": 13.5,
+          "width": 76.609375,
+          "height": 44,
+          "top": 13.5,
+          "right": 848.0625,
+          "bottom": 57.5,
+          "left": 771.453125
+        }
+      ]
+    }
+  ]
+}

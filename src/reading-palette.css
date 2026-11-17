@@ -1,0 +1,47 @@
+/* Inlined in every Writing head by Vite, before the preference bootstrap and first paint.
+   The screen-only Ink override also makes print independent of the saved preference. */
+:root {
+  --reading-paper: #ece6d8;
+  --reading-paper-text: #1b1916;
+  --reading-paper-rule: #cfc7b5;
+  --reading-ink: #201e1b;
+  --reading-ink-text: #dcd5c7;
+  --reading-ink-rule: #4a453c;
+}
+:root.paper {
+  color-scheme: light;
+  --bg: var(--reading-paper);
+  --ink: var(--reading-paper-text);
+  --muted: #645e52;
+  --rule: var(--reading-paper-rule);
+  --blue-ink: #2c5aa6;
+  --teal-ink: #26716c;
+  --orange-ink: #a64e1e;
+  --blue: #6f9fe0;
+  --orange: #dd7d45;
+  --green: #86b890;
+  --teal: #4fa7a0;
+  --block-ink: #1b1916;
+  --grain-opacity: .16;
+  --grain-blend: multiply;
+  background: var(--bg);
+  color: var(--ink);
+}
+@media screen {
+  :root.paper[data-reading-mode='ink'] {
+    color-scheme: dark;
+    --bg: var(--reading-ink);
+    --ink: var(--reading-ink-text);
+    --muted: #aaa293;
+    --rule: var(--reading-ink-rule);
+    --blue: #8bb3e8;
+    --blue-ink: #8bb3e8;
+    --teal: #78b8ac;
+    --teal-ink: #78b8ac;
+    --orange: #dc956a;
+    --orange-ink: #dc956a;
+    --green: #99bc9f;
+    --grain-opacity: .07;
+    --grain-blend: soft-light;
+  }
+}

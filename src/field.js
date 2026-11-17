@@ -407,9 +407,10 @@ export class Field {
 
   // Pull a proof: the blocks lie flat as the lines of a page (bars, as for card()), and the sheet
   // beneath them turns to paper and grows to fill the window. Then the page itself takes over.
-  proof(element, bars, done) {
+  proof(element, bars, done, { surface = PAPER, shadow: shadowColor = PAPER_SHADOW } = {}) {
     this.card(element, bars, null, .8);
-    const u = this.floor.material.uniforms, unit = 1 / this.group.scale.x, to = TINT.writing, shadow = new Color(PAPER_SHADOW);
+    const u = this.floor.material.uniforms, unit = 1 / this.group.scale.x, to = TINT.writing, shadow = new Color(shadowColor);
+    u.uPaperCol.value.copy(raw(surface));
     gsap.to(u.uTint.value, { r: to.r, g: to.g, b: to.b, duration: .4, overwrite: true });
     gsap.to(this.flat, { v: 1, duration: .7, ease: 'power3.inOut', overwrite: true });
     gsap.to(this.group.rotation, { z: 0, duration: .7, ease: 'power3.inOut', overwrite: true });

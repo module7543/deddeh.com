@@ -1,8 +1,9 @@
 // The proof: before an essay opens, its page is laid out out of sight at the size of this window,
 // and the position of every word on its first screen is read from it. The blocks are then set
 // exactly there, so that when the page arrives its words stand where the blocks stood.
+import { readReadingMode } from './reading-mode.js';
+
 const MAX = 140; // one block a bar; the sheet has 140 and a cursor
-const PAPER = [236, 230, 216], BLUE = [111, 159, 224];
 const rgb = (text) => (text.match(/[\d.]+/g) ?? [0, 0, 0]).slice(0, 3).map(Number);
 const mix = (a, b, t) => a.map((v, i) => Math.round(v + (b[i] - v) * t));
 const hex = (c) => (c[0] << 16) | (c[1] << 8) | c[2];
@@ -32,6 +33,12 @@ export function createProof({ isReduced, hasField }) {
       const doc = frame?.contentDocument, main = doc?.querySelector('main');
       if (!main || link.href !== href || doc.readyState !== 'complete' || (doc.fonts && doc.fonts.status !== 'loaded')) return null;
       const view = doc.defaultView, height = view.innerHeight, words = [];
+      // A prepared iframe can outlive a preference change (another tab or browser Back).
+      // Changing only colour leaves its exact typography measurements intact.
+      doc.documentElement.dataset.readingMode = readReadingMode();
+      const palette = view.getComputedStyle(doc.documentElement);
+      const surface = rgb(palette.backgroundColor);
+      const rule = rgb(view.getComputedStyle(doc.querySelector('.top')).borderBottomColor);
       const walker = doc.createTreeWalker(doc.body, NodeFilter.SHOW_ALL);
       const range = doc.createRange();
       let below = 0;
@@ -47,7 +54,7 @@ export function createProof({ isReduced, hasField }) {
         if (style.visibility === 'hidden') continue;
         const mark = node.parentElement.closest('mark'), linked = node.parentElement.closest('.prose a');
         const tall = style.textTransform === 'uppercase' ? .7 : .46, big = size >= 40;
-        const ink = mark && !clear(view.getComputedStyle(mark).backgroundColor) ? rgb(view.getComputedStyle(mark).backgroundColor) : linked ? BLUE : mix(rgb(style.color), PAPER, big ? 0 : .5);
+        const ink = mark && !clear(view.getComputedStyle(mark).backgroundColor) ? rgb(view.getComputedStyle(mark).backgroundColor) : linked ? rgb(style.textDecorationColor) : mix(rgb(style.color), surface, big ? 0 : .5);
         for (const match of node.data.matchAll(/\S+/g)) {
           range.setStart(node, match.index); range.setEnd(node, match.index + match[0].length);
           const r = range.getClientRects()[0];
@@ -72,6 +79,7 @@ export function createProof({ isReduced, hasField }) {
       bars = bars.slice(0, MAX);
       const box = frame.getBoundingClientRect(), cx = box.width / 2, cy = box.height / 2;
       return {
+        surface: hex(surface), shadow: hex(rule), mode: doc.documentElement.dataset.readingMode,
         field: bars.map((b) => ({ x: b.l + b.w / 2 - cx, y: b.t + b.h / 2 - cy, w: b.w, h: b.h, c: hex(b.c), z: 0 })),
         page: bars.map((b) => [Math.round(b.l * 10) / 10, Math.round(b.t * 10) / 10, Math.round(b.w * 10) / 10, Math.round(b.h * 10) / 10, hex(b.c)]),
       };

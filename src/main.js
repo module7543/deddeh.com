@@ -6,6 +6,7 @@ import './style.css';
 import { gsap } from 'gsap';
 import { createContact } from './contact.js';
 import { createProof } from './proof.js';
+import { readReadingMode } from './reading-mode.js';
 
 const SECTIONS = {
   writing: { accent: 'var(--blue)', statement: 'Essays, observations, and notes on markets and long-term decisions.', no: 'Fig. 1', figure: 'The sheet, set as prose with marginalia.' },
@@ -196,13 +197,15 @@ function openEssay(event, link) {
   event.preventDefault();
   if (leaving) return;
   leaving = true;
+  root.dataset.proofMode = readReadingMode();
   root.classList.add('is-proofing');
   const bars = field ? proof.measure(link) : null;
+  root.classList.toggle('is-proof-fallback', !bars);
   const go = () => {
-    try { if (bars) sessionStorage.setItem('deddeh:proof', JSON.stringify({ at: Date.now(), w: window.innerWidth, h: window.innerHeight, bars: bars.page })); } catch { /* storage unavailable */ }
+    try { if (bars) sessionStorage.setItem('deddeh:proof', JSON.stringify({ at: Date.now(), w: window.innerWidth, h: window.innerHeight, bars: bars.page, mode: bars.mode })); } catch { /* storage unavailable */ }
     location.assign(link.href);
   };
-  if (bars) field.proof(proof.frame, bars.field, go); else setTimeout(go, 360);
+  if (bars) field.proof(proof.frame, bars.field, go, bars); else setTimeout(go, 360);
 }
 essayLinks.forEach((link) => {
   link.addEventListener('click', (event) => openEssay(event, link));
@@ -212,7 +215,8 @@ essayLinks.forEach((link) => {
 window.addEventListener('pageshow', (event) => {
   if (!event.persisted || !leaving) return;
   leaving = false;
-  root.classList.remove('is-proofing');
+  root.classList.remove('is-proofing', 'is-proof-fallback');
+  delete root.dataset.proofMode;
   field?.unproof();
   field?.select(rest());
 });

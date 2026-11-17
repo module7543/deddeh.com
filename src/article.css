@@ -1,13 +1,5 @@
 /* The essay page: the homepage's palette, inverted. Its ink is this page's paper, and its ground is this page's ink. */
 :root.paper {
-  color-scheme: light;
-  --bg: #ece6d8;
-  --ink: #1b1916;
-  --muted: #645e52;
-  --rule: #cfc7b5;
-  --blue-ink: #2c5aa6;
-  --teal-ink: #2a7a74;
-  --orange-ink: #a84f1e;
   --accent: var(--blue);
   --read: 'Newsreader Variable', 'Iowan Old Style', Georgia, serif;
   --measure: 620px;
@@ -15,9 +7,9 @@
   --gap: 56px;
 }
 .paper body { overflow-x: clip; }
-.paper .grain { opacity: .16; mix-blend-mode: multiply; }
+.paper .grain { opacity: var(--grain-opacity); mix-blend-mode: var(--grain-blend); }
 .paper .shell { display: block; min-height: 100svh; }
-.paper ::selection { background: var(--blue); color: var(--ink); }
+.paper ::selection { background: var(--blue); color: var(--block-ink); }
 .paper :focus-visible { outline-color: var(--blue-ink); }
 :where(.paper) :where(h1, h2, dl, dd, blockquote, aside) { margin: 0; }
 
@@ -25,6 +17,42 @@
 .return span { text-decoration: none; display: inline-block; transition: transform .35s cubic-bezier(.2, .9, .2, 1); }
 .return:hover { color: var(--blue-ink); }
 .return:hover span { transform: translateX(-4px); }
+
+/* Two independent choices, with small printing blocks inside generous targets. */
+.reader-enabled .top { position: sticky; top: 0; z-index: 4; background: var(--bg); }
+.reader-enabled { scroll-padding-top: 88px; }
+.reading-mode { flex: none; margin-left: auto; font: 500 14px/1.4 var(--mono); color: var(--muted); }
+.reading-mode + .return { margin-left: 0; }
+.mode-options { display: flex; gap: 4px; }
+.reading-mode button { display: inline-flex; align-items: center; justify-content: center; min-width: 44px; min-height: 44px; border-radius: 2px; }
+.mode-face { display: inline-flex; align-items: center; justify-content: center; gap: 7px; min-height: 32px; padding: 0 9px; border-radius: 2px; }
+.reading-mode svg { display: block; width: 18px; height: 18px; flex: none; }
+.reading-mode button:hover .mode-face { background: var(--rule); color: var(--ink); }
+.reading-mode .mode-paper[aria-pressed='true'] .mode-face,
+.reading-mode .mode-switch .mode-face { background: #eddbb8; color: #66451e; box-shadow: inset 0 -2px #90662f; }
+.reading-mode .mode-ink[aria-pressed='true'] .mode-face,
+[data-reading-mode='ink'] .reading-mode .mode-switch .mode-face { background: #b9c8d2; color: #293c47; box-shadow: inset 0 -2px #586f7d; }
+.reading-mode button:focus-visible { outline-offset: 2px; }
+.reading-mode .mode-switch, .mode-to-paper { display: none; }
+[data-reading-mode='ink'] .mode-to-paper { display: inline; }
+[data-reading-mode='ink'] .mode-to-ink { display: none; }
+
+/* Interpolate the shared inks once, rather than re-transitioning inherited colours
+   on each child (which makes links and labels lag behind the surrounding text).
+   Browsers without registered properties still switch immediately and remain readable. */
+@property --bg { syntax: '<color>'; inherits: true; initial-value: #ece6d8; }
+@property --ink { syntax: '<color>'; inherits: true; initial-value: #1b1916; }
+@property --muted { syntax: '<color>'; inherits: true; initial-value: #645e52; }
+@property --rule { syntax: '<color>'; inherits: true; initial-value: #cfc7b5; }
+@property --blue { syntax: '<color>'; inherits: true; initial-value: #6f9fe0; }
+@property --blue-ink { syntax: '<color>'; inherits: true; initial-value: #2c5aa6; }
+@property --teal { syntax: '<color>'; inherits: true; initial-value: #4fa7a0; }
+@property --teal-ink { syntax: '<color>'; inherits: true; initial-value: #26716c; }
+@property --orange { syntax: '<color>'; inherits: true; initial-value: #dd7d45; }
+@property --orange-ink { syntax: '<color>'; inherits: true; initial-value: #a64e1e; }
+@property --green { syntax: '<color>'; inherits: true; initial-value: #86b890; }
+.paper.is-switching-mode { transition: --bg .45s ease, --ink .45s ease, --muted .45s ease, --rule .45s ease, --blue .45s ease, --blue-ink .45s ease, --teal .45s ease, --teal-ink .45s ease, --orange .45s ease, --orange-ink .45s ease, --green .45s ease; }
+.paper.is-switching-mode *, .paper.is-switching-mode *::before, .paper.is-switching-mode *::after { transition: none; }
 
 #essay { outline: none; animation: arrive .5s .04s both; }
 @keyframes arrive { from { opacity: 0; } }
@@ -44,7 +72,7 @@
 .essay-head .lede-bar { margin: clamp(40px, 8vh, 84px) 0 26px; }
 .essay h1 { font: 880 clamp(50px, 7.6vw, 112px)/.9 var(--sans); font-variation-settings: 'wdth' 62; letter-spacing: -.012em; text-transform: uppercase; text-wrap: balance; }
 /* One word of the title stands open in its block, as the chosen word does in the index. */
-.essay h1 mark { display: inline-block; margin: 0 .04em 0 -.02em; padding: .055em .09em .03em; background: var(--blue); color: var(--ink); font-variation-settings: 'wdth' 112; vertical-align: baseline; line-height: .86; }
+.essay h1 mark { display: inline-block; margin: 0 .04em 0 -.02em; padding: .055em .09em .03em; background: var(--blue); color: var(--block-ink); font-variation-settings: 'wdth' 112; vertical-align: baseline; line-height: .86; }
 .dek { margin-top: clamp(22px, 3vh, 34px); max-width: 19em; font: italic 400 clamp(27px, 2.5vw, 38px)/1.14 var(--serif); letter-spacing: -.005em; text-wrap: balance; }
 .meta { display: flex; flex-wrap: wrap; gap: 10px clamp(24px, 3vw, 44px); margin-top: clamp(30px, 5vh, 52px); padding-top: 16px; border-top: 1px solid var(--rule); font: 400 13px/1.5 var(--mono); letter-spacing: .01em; }
 .meta dt { letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
@@ -87,6 +115,7 @@
 .after .toc-item:hover .word, .after .toc-item:focus-visible .word { font-variation-settings: 'wdth' 108; }
 .after .toc-item:hover .word::before, .after .toc-item:focus-visible .word::before { transform: scaleX(1); }
 .after .toc-item:hover .num, .after .toc-item:focus-visible .num { color: var(--ink); }
+.after .toc-item:hover .word-text, .after .toc-item:focus-visible .word-text { color: var(--block-ink); }
 .after .toc-item:focus-visible { outline-offset: 2px; }
 .after .figure { grid-column: 2; grid-row: 1; max-width: 30em; }
 .after .figure-caption { flex-wrap: nowrap; text-align: right; }
@@ -115,21 +144,33 @@
   .after .figure { grid-column: 1; grid-row: 2; justify-self: start; }
   .after .figure-caption { text-align: left; }
 }
+@media (max-width: 600px) {
+  .reader-enabled .top { gap: 12px; }
+  .reader-enabled .top .marks { display: none; }
+  .reader-enabled { scroll-padding-top: 76px; }
+  .mode-options { display: none; }
+  .reading-mode .mode-switch { display: inline-flex; }
+  .mode-switch .mode-face { width: 36px; padding: 0; }
+}
 @media (max-width: 480px) { .paper .marks span:not(.is-on) { display: none; } }
 
 /* Leaving: the paper darkens to the homepage's ground before the index returns. */
-.paper, .paper body { transition: background-color .34s .06s; }
-.paper.is-leaving { --bg: #141311; --rule: #322f2a; }
+.paper.is-leaving, .paper.is-leaving body, .paper.is-leaving .top { transition: background-color .34s .06s; }
+:root.paper.is-leaving { --bg: #141311; --rule: #322f2a; }
 .paper.is-leaving .top { color: #ece6d8; }
-.paper.is-leaving #essay, .paper.is-leaving .return { opacity: 0; animation: none; transition: opacity .2s; }
+.paper.is-leaving #essay, .paper.is-leaving .return, .paper.is-leaving .reading-mode { opacity: 0; animation: none; transition: opacity .2s; }
 @media (prefers-reduced-motion: reduce) {
   #essay, .from-proof #essay, .from-proof.proofed #essay { animation: none; }
   .end { animation: none; }
   .paper, .paper body, .return span, .prose a, .after .word { transition: none; }
+  .paper.is-switching-mode, .paper.is-switching-mode *, .paper.is-switching-mode *::before, .paper.is-switching-mode *::after { transition: none; }
 }
 @media print {
-  .grain, .return, .marks, .after .toc, .skip-link { display: none; }
-  .paper { --bg: #fff; }
+  .grain, .return, .marks, .after .toc, .skip-link, .reading-mode, .proof-bars { display: none; }
+  :root.paper { --bg: #fff; --ink: #1b1916; --rule: #cfc7b5; }
+  .paper .top { position: static; color: var(--ink); }
+  .paper #essay { opacity: 1; animation: none; }
+  .paper, .paper *, .paper *::before, .paper *::after { transition: none !important; animation: none !important; }
   .note { break-inside: avoid; }
 }
 .paper .figure-no { color: var(--blue-ink); }
