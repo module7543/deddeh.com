@@ -39,7 +39,7 @@ describe('Writing reading preference', () => {
     const control = button();
     expect(control.tagName).toBe('BUTTON');
     expect(control.type).toBe('button');
-    expect(control.getAttribute('aria-label')).toBe('Ink reading mode');
+    expect(control.getAttribute('aria-label')).toBe('Dark reading mode');
     control.focus();
     for (const [mode, pressed] of [['ink', 'true'], ['paper', 'false']]) {
       control.click();

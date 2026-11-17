@@ -1,68 +1,76 @@
-# One article, two atmospheres
+# Writing: Light / Dark, Paper / Ink
 
-Paper / Ink adds an evening reading surface to Writing's existing editorial proof. Paper retains its ivory ground, typography, asymmetric measure and marginalia. Ink uses warm charcoal (`#201e1b`), softly luminous text (`#dcd5c7`) and quieter secondary text (`#aaa293`). The blue title block retains dark lettering; blue, orange and teal stay recognizably part of the same composition.
+Writing has two reading atmospheres: the original ivory Paper and warm charcoal Ink. A framed **sun / Light · moon / Dark** control in the running header makes that choice visible. Its selected half uses the existing blue block, dark lettering and a fine lower rule. IBM Plex Mono, small line icons and nearly square corners keep it close to the site's editorial vocabulary.
 
-The control is a small IBM Plex Mono button in the existing header. A blue rule identifies the current mode, horizontally on desktop and vertically beside the two-line label on phones. The running header stays available through the article; it adds no new row, floating panel or change to the article's dimensions. On narrow screens the control occupies the decorative header marks' space. Its native button semantics announce **Ink reading mode, pressed/not pressed**; Space, Enter, touch and pointer all operate the same 44px-or-larger target.
+The original Paper / Ink words looked like a quiet header annotation. Familiar symbols, literal Light / Dark labels, a visible boundary and a filled selection now identify the control as interactive. This is a design judgment, not a claim established by automated tests or a first-time-user study.
 
-A 450ms fade interpolates shared registered CSS color properties once, keeping inherited text and links synchronized. Reduced motion is immediate; browsers without registered custom property support retain an immediate usable switch. There are no new runtime dependencies.
+At 600px and below, the words drop away and both sun and moon remain in a **70 × 44px** button. It occupies the same header slot without an extra row; Writing and home retain their own targets. The full control is one native toggle: clicking or tapping anywhere changes modes. Its stable accessible name is **Dark reading mode** and `aria-pressed` announces on/off. Enter and Space work, icons are decorative to assistive technology, and a separate blue focus outline remains visible.
 
-## Shared implementation
+## Scope and provenance
 
-- `src/reading-palette.css` owns the semantic article colors. Only `.paper` pages receive them. Ink's overrides are screen-only, so print always uses a light sheet.
-- Vite injects that palette and the shared preference bootstrap into every `writing/*/index.html` head. The explicit `deddeh:reading-mode` preference is applied before the article module, fonts or first visible content; future articles require no separate theme implementation. No system-clock or OS-theme inference is used.
-- `src/reading-mode.js` progressively creates the control, stores explicit choices, and synchronizes other tabs and restored history entries. Storage denial still permits switching on the current page. No JavaScript means readable Paper and ordinary navigation, with no dead control.
-- `src/proof.js` retains the typography measurement algorithm. It refreshes a prepared iframe's preference at measurement time, samples the actual surface and rules, and blends word bars against that surface. `Field.proof` accepts those two colors; geometry, formation, easing and timing remain the existing implementation.
-- The homepage's proof-only CSS uses the same palette for its header and fallback fade. Unmeasured and no-WebGL entries also land in the chosen atmosphere. Arrival bars carry their mode, preventing a stale palette from drawing over another mode.
-- Return links and browser Back/Forward retain the existing navigation. Only the proof method's color arguments change in `field.js`; homepage artwork and Music sculpture generation are untouched. Article copy/metadata, Contact, deployment and domain configuration are unchanged.
+- GitHub account/repository authenticated as `module7543` / `module7543/deddeh.com`.
+- Fresh branch `design/writing-mode-discoverability` starts directly at PR #12's verified head, `a63fe70578b3b993985ef5f210ef16114343f6e1`.
+- Production `main` had advanced to `639d75c8f70f31742743438d266a8bd2c9800b6d`. Its only additional change was `.github/workflows/pr-checks.yml`; it was inspected and merged into this branch.
+- The new PR targets `main` and contains the complete reading-mode feature. It does not depend on merging PR #12. Both PRs remain unmerged; PR #12's branch is unchanged.
+- Refinement runtime changes are confined to the control markup/name/title in `src/reading-mode.js` and its styles in `src/article.css`. Palettes, article typography/layout, the 450ms fade, persistence, proof-pulling animation, scroll/focus handling, reduced motion and print behavior remain as implemented in PR #12. No refinement changes to homepage, Apps, Music or Contact code.
+
+## Complete reading-mode implementation
+
+- `src/reading-palette.css` owns the semantic article colors. Ink uses warm charcoal `#201e1b`, text `#dcd5c7` and secondary text `#aaa293`. Print uses light Paper.
+- Vite injects the palette and shared preference bootstrap into every `writing/*/index.html` head. Explicit `deddeh:reading-mode` preference applies before first paint; future Writing articles share the implementation.
+- `src/reading-mode.js` creates the control, persists explicit choices and synchronizes tabs and restored history entries. No JavaScript means readable Paper with no dead control. Denied storage still allows switching.
+- The existing proof measures the chosen surface and shadow colors. Its geometry, formation, easing and timing stay intact; measured and fallback entries respect the saved mode.
+- Registered CSS color properties keep the background and text fade synchronized. Reduced motion switches immediately.
 
 ## Verification
 
-Verified against production `main` at `0bba93a64cc4c24d41f2da96ab58e36e686e5d51`.
+The current refinement was tested in Linux Chromium with software WebGL and emulated mobile touch. The original PR #12 build was served separately as the comparison baseline.
 
-- JavaScript syntax check; **44 interaction/unit tests**, including seven preference tests; GitHub Pages production build.
-- Existing site-wide Chromium verification on desktop and mobile: Writing, Apps, Music playback, navigation and mocked Formspree. No real submissions.
-- `verify:reading`: default Paper despite OS dark preference; both directions of switching; Enter/Space/touch; native accessibility-tree state; unchanged focus, scroll and typesetting; reload and a second article fixture; direct saved-Ink entry with delayed and failed module downloads; real measured proof in both modes; a previously prepared iframe with a changed preference; no-WebGL/unmeasured fallbacks; return navigation; actual Back/Forward cache restoration in both modes; cross-tab synchronization; reduced motion; widths 320, 360, 390, 600, 768, 1100 and 1440; denied local/session storage; no JavaScript; print during a switch and return to Ink on screen.
-- First-frame sampling found no Paper background with stored Ink, even with the article bundle delayed or aborted.
-- Desktop and mobile article geometry and typography match production. Paper's opening pixels below the proof label are identical. The existing orange Proof label received a minimal AA correction (`#a84f1e` → `#a64e1e`, 4.44:1 → 4.52:1); the unused teal text token was also strengthened for future use.
-- Text contrast: Paper body 14.10:1, secondary 5.17:1; Ink body 11.39:1, secondary 6.57:1. Tested links, highlighted title, section numbers, notes, captions, control focus, hover and selection. [Measured ratios and history evidence](verification.json).
-- Hands-on shared Chromium inspection: switching, scrolling, return navigation and saved-Ink fallback entry. Reviewed all eight captures and a rendered print PDF. [Rendered browser recording](paper-ink.mp4) includes both directions, mid-article switching and measured proof entry.
+- `npm run check`; `npm test`: **44 tests passed**; `npm run build`; `npm run build:pages`.
+- Existing `verify:pages` passed desktop and mobile navigation, Writing, Apps, Music playback and mocked Contact. No real Formspree submissions.
+- `verify:reading`: pointer, Enter/Space and emulated touch; switching in both directions; native accessibility name/pressed state; visible focus; 44px target; unchanged scroll, focus and article geometry; reload, another article fixture and cross-tab persistence; sticky header and no navigation overlap at 320, 360, 390, 600, 601, 768, 1100 and 1440px.
+- The Paper article geometry and opening pixels below the proof label match PR #12 exactly at desktop and mobile sizes. Palette/proof source files are unchanged by the refinement.
+- The reading suite also checks first-frame Ink with delayed/failed modules, measured proof and stale iframe preference, fallback entry, Back/Forward restoration, reduced motion, denied storage, no JavaScript and light print during a switch.
+- Control label/icon contrast is checked against each actual selected/unselected surface; boundary and focus contrast are checked separately. [Measured results](verification.json).
+- Shared Chromium desktop inspection covered both directions, the scrolled sticky dark header and keyboard focus. Actual screenshots below were inspected at desktop, 390px and 320px widths.
+- An inherited fallback check raced the outgoing page navigation. The test now holds the destination request until the outgoing fallback palette has been inspected; application behavior is unchanged.
 
-Limits: Chromium on Linux, software WebGL and emulated mobile touch. No physical iOS/Android device, Safari/Firefox or spoken VoiceOver/NVDA audit. Accessibility was checked through native roles/state, the browser accessibility tree, keyboard behavior and contrast. The only published essay is the sample; cross-article persistence uses a locally served second-article fixture. No production deployment was made.
+Limits: no physical iOS/Android device, Safari/Firefox or spoken VoiceOver/NVDA audit. Native accessibility-tree, keyboard, touch emulation and contrast checks do not establish spoken screen-reader behavior or aesthetic quality. Cross-article testing uses a local second-article fixture because only one essay is published. No production deployment was made.
 
-Reproduce against a local Pages build:
+## Run the exact reviewed commit
+
+Use the new PR's head SHA (also recorded in the portable preview's `START-HERE.txt`):
 
 ```sh
+git fetch origin design/writing-mode-discoverability
+git switch --detach <new-PR-head-SHA>
 npm ci
-npm run check
-npm test
 npm run build:pages
 npm run preview -- --base=/deddeh.com/ --port 4175
-# In another terminal:
-PREVIEW_URL=http://localhost:4175/deddeh.com/ npm run verify:pages
-PREVIEW_URL=http://localhost:4175/deddeh.com/ npm run verify:reading
+# http://localhost:4175/deddeh.com/writing/the-margin/
 ```
 
-Set `CHROMIUM_PATH` if using an installed Chromium instead of Playwright's browser. Set `BASELINE_URL` to a separately served production build to also run the geometry/pixel comparison. Browser verification regenerates these screenshots; the print PDF and JSON report go to `artifacts/reading/`.
-
-## Interactive preview
+Then, in another terminal:
 
 ```sh
-git fetch origin feature/writing-reader-mode
-git switch feature/writing-reader-mode
-npm ci
-npm run dev
-# http://localhost:4173/writing/the-margin/
+CHROMIUM_PATH=/usr/bin/chromium PREVIEW_URL=http://localhost:4175/deddeh.com/ npm run verify:pages
+CHROMIUM_PATH=/usr/bin/chromium PREVIEW_URL=http://localhost:4175/deddeh.com/ npm run verify:reading
 ```
 
-For a portable preview with no Node installation: run `npm run package:reading-preview`, unzip `artifacts/Deddeh-Paper-Ink-preview.zip`, then run `python3 preview.py` (Windows: `py preview.py`) inside the extracted folder. It opens the complete built website on a local-only server, with the source commit recorded in `START-HERE.txt`. Test the toggle, reload, return to Writing and reopen the article. Contact retains its real destination; do not send test messages.
+Omit `CHROMIUM_PATH` to use Playwright's installed Chromium. Set `BASELINE_URL` to a separately served reference build to repeat the geometry/pixel comparison. The reading verification regenerates screenshots here and writes its report/print PDF under `artifacts/reading/`.
 
-## Comparable screenshots
+For a portable preview: run `npm run package:reading-preview`, unzip `artifacts/Deddeh-Paper-Ink-preview.zip`, then run `python3 preview.py` (Windows: `py preview.py`). It serves the complete bundled website with local fonts/audio and records its exact source commit. Contact retains its real destination; do not send test messages. The preview is local; no public branch-preview host or port-forward tool was available in this environment.
 
-Actual Chromium captures at 1440×900 and 390×844. Each opening and reading pair uses the same scroll position.
+## Actual screenshots
 
-| Position | Paper | Ink |
+Chromium captures, with matched positions within each pair. Light uses Paper; Dark uses Ink.
+
+| Position | Light | Dark |
 |---|---|---|
-| Desktop opening | ![Paper desktop opening](desktop-paper-opening.jpg) | ![Ink desktop opening](desktop-ink-opening.jpg) |
-| Desktop reading | ![Paper desktop reading](desktop-paper-reading.jpg) | ![Ink desktop reading](desktop-ink-reading.jpg) |
-| Mobile opening | ![Paper mobile opening](mobile-paper-opening.jpg) | ![Ink mobile opening](mobile-ink-opening.jpg) |
-| Mobile reading | ![Paper mobile reading](mobile-paper-reading.jpg) | ![Ink mobile reading](mobile-ink-reading.jpg) |
+| Desktop 1440 × 900, opening | ![Desktop Light](desktop-paper-opening.jpg) | ![Desktop Dark](desktop-ink-opening.jpg) |
+| Desktop, reading | ![Desktop Light reading](desktop-paper-reading.jpg) | ![Desktop Dark reading](desktop-ink-reading.jpg) |
+| Mobile 390 × 844, opening | ![390px Light](mobile-paper-opening.jpg) | ![390px Dark](mobile-ink-opening.jpg) |
+| Mobile, reading | ![Mobile Light reading](mobile-paper-reading.jpg) | ![Mobile Dark reading](mobile-ink-reading.jpg) |
+| Mobile 320 × 844, opening | ![320px Light](mobile-320-paper-opening.jpg) | ![320px Dark](mobile-320-ink-opening.jpg) |
+
+`paper-ink.mp4` is historical footage from PR #12, showing the original text control; the screenshots above show the current refinement.

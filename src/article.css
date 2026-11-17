@@ -18,19 +18,17 @@
 .return:hover { color: var(--blue-ink); }
 .return:hover span { transform: translateX(-4px); }
 
-/* A small typesetter's switch in the existing running head. No extra row or overlay. */
+/* A framed pair of printing blocks in the existing running head. One native toggle. */
 .reader-enabled .top { position: sticky; top: 0; z-index: 4; background: var(--bg); }
 .reader-enabled { scroll-padding-top: 88px; }
-.reading-mode { display: inline-flex; align-items: center; justify-content: center; gap: 9px; flex: none; min-height: 44px; margin-left: auto; padding: 0 8px; font: 400 13px/1.4 var(--mono); color: var(--muted); }
+.reading-mode { display: inline-flex; align-items: center; justify-content: center; gap: 2px; flex: none; min-height: 44px; margin-left: auto; padding: 3px; border: 1px solid var(--muted); border-radius: 2px; font: 400 13px/1.4 var(--mono); color: var(--muted); }
 .reading-mode + .return { margin-left: 0; }
-.reading-mode span:not(.mode-divider) { position: relative; }
-.reading-mode span:not(.mode-divider)::after { content: ''; position: absolute; height: 2px; inset: auto 0 -5px; background: var(--blue-ink); transform: scaleX(0); transition: transform .25s ease; }
-.reading-mode[aria-pressed='false'] .mode-paper, .reading-mode[aria-pressed='true'] .mode-ink { color: var(--ink); }
-.reading-mode[aria-pressed='false'] .mode-paper::after, .reading-mode[aria-pressed='true'] .mode-ink::after { transform: scaleX(1); }
-.reading-mode:hover { color: var(--blue-ink); }
-.reading-mode:active { opacity: .75; }
-.reading-mode:focus-visible { outline-offset: 2px; }
-.mode-divider { color: var(--muted); }
+.reading-mode > span { display: inline-flex; align-items: center; justify-content: center; gap: 6px; min-height: 34px; padding: 0 9px; border-radius: 1px; }
+.reading-mode svg { width: 17px; height: 17px; flex: none; }
+.reading-mode[aria-pressed='false'] .mode-paper, .reading-mode[aria-pressed='true'] .mode-ink { background: var(--blue); color: var(--block-ink); box-shadow: inset 0 -2px var(--blue-ink); }
+.reading-mode:hover { border-color: var(--blue-ink); color: var(--blue-ink); }
+.reading-mode:active { border-color: var(--ink); }
+.reading-mode:focus-visible { outline-offset: 3px; }
 
 /* Interpolate the shared inks once, rather than re-transitioning inherited colours
    on each child (which makes links and labels lag behind the surrounding text).
@@ -143,10 +141,8 @@
   .reader-enabled .top { gap: 12px; }
   .reader-enabled .top .marks { display: none; }
   .reader-enabled { scroll-padding-top: 76px; }
-  .reading-mode { flex-direction: column; gap: 2px; min-width: 60px; line-height: 1.25; }
-  .reading-mode .mode-divider { display: none; }
-  .reading-mode span:not(.mode-divider)::after { width: 2px; height: auto; inset: 2px auto 2px -8px; transform: scaleY(0); }
-  .reading-mode[aria-pressed='false'] .mode-paper::after, .reading-mode[aria-pressed='true'] .mode-ink::after { transform: scaleY(1); }
+  .reading-mode > span { width: 30px; padding: 0; }
+  .reading-mode .mode-label { display: none; }
 }
 @media (max-width: 480px) { .paper .marks span:not(.is-on) { display: none; } }
 
@@ -159,7 +155,7 @@
   #essay, .from-proof #essay, .from-proof.proofed #essay { animation: none; }
   .end { animation: none; }
   .paper, .paper body, .return span, .prose a, .after .word { transition: none; }
-  .paper.is-switching-mode, .paper.is-switching-mode *, .paper.is-switching-mode *::before, .paper.is-switching-mode *::after, .reading-mode span::after { transition: none; }
+  .paper.is-switching-mode, .paper.is-switching-mode *, .paper.is-switching-mode *::before, .paper.is-switching-mode *::after { transition: none; }
 }
 @media print {
   .grain, .return, .marks, .after .toc, .skip-link, .reading-mode, .proof-bars { display: none; }

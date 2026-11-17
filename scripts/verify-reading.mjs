@@ -49,7 +49,19 @@ async function checkContrast(page, mode) {
   const ratios = Object.fromEntries(colors.map(c => [c.selector, +contrast(c.text, c.bg).toFixed(2)]));
   for (const [selector, ratio] of Object.entries(ratios)) assert(ratio >= 4.5, `${mode} ${selector}: ${ratio}:1`);
   report.contrast[mode] = ratios;
-  // Focus and selected-mode indicator use the stronger blue ink, not the decorative blue.
+  // Check the actual icon/label surfaces as well as the discoverable outer boundary.
+  const controlColors = await page.locator('.reading-mode').evaluate(node => {
+    const bg = getComputedStyle(document.body).backgroundColor;
+    return { border: getComputedStyle(node).borderColor, bg, segments: [...node.children].map(segment => {
+      const s = getComputedStyle(segment);
+      return { text: s.color, bg: s.backgroundColor === 'rgba(0, 0, 0, 0)' ? bg : s.backgroundColor };
+    }) };
+  });
+  assert(contrast(controlColors.border, controlColors.bg) >= 3, `${mode} control boundary`);
+  for (const segment of controlColors.segments) assert(contrast(segment.text, segment.bg) >= 4.5, `${mode} control label/icon contrast`);
+  assert.notEqual(controlColors.segments[0].bg, controlColors.segments[1].bg, 'Selected mode has a distinct filled surface');
+  report.contrast[mode].controlSegments = controlColors.segments.map(s => +contrast(s.text, s.bg).toFixed(2));
+  // Focus uses the stronger blue ink, not the decorative blue.
   await page.locator('.reading-mode').focus();
   await page.keyboard.press('Tab');
   await page.keyboard.press('Shift+Tab');
@@ -66,18 +78,18 @@ try {
     await page.goto(article); await ready(page); await settled(page, 'paper');
     assert.equal(await page.evaluate(() => localStorage.getItem('deddeh:reading-mode')), null, 'OS dark preference must not select Ink');
     const original = await geometry(page);
-    const control = page.getByRole('button', { name: 'Ink reading mode' });
+    const control = page.getByRole('button', { name: 'Dark reading mode' });
     const bounds = await control.boundingBox();
     assert(bounds.width >= 44 && bounds.height >= 44, 'Touch target >= 44px');
     if (process.env.BASELINE_URL) {
       const baseline = await context.newPage();
       await baseline.goto(`${process.env.BASELINE_URL}writing/the-margin/`); await ready(baseline);
-      assert.deepEqual(await geometry(baseline), original, 'Paper preserves production article geometry and type');
+      assert.deepEqual(await geometry(baseline), original, 'Paper preserves reference article geometry and type');
       const viewport = page.viewportSize();
       const header = Math.ceil(await page.locator('.slug').evaluate(n => n.getBoundingClientRect().bottom));
       const clip = { x: 0, y: header, width: viewport.width, height: viewport.height - header };
-      assert((await page.screenshot({ clip, animations: 'disabled' })).equals(await baseline.screenshot({ clip, animations: 'disabled' })), 'Paper below the proof label is pixel-identical to production (label received a minimal AA contrast correction)');
-      report.baseline.push(`${device}: geometry and pixels below proof label identical to main`);
+      assert((await page.screenshot({ clip, animations: 'disabled' })).equals(await baseline.screenshot({ clip, animations: 'disabled' })), 'Paper below the proof label is pixel-identical to the reference build');
+      report.baseline.push(`${device}: geometry and pixels below proof label identical to reference build`);
       await baseline.close();
     }
     await capture(page, device, 'paper', 'opening');
@@ -188,24 +200,42 @@ try {
     }, fallback);
     if (fallback === 'unmeasured') await context.route('**/writing/the-margin/', route => route.request().isNavigationRequest() && route.request().frame().parentFrame() ? route.abort() : route.continue());
     const page = await context.newPage(); await page.goto(`${base}#writing`);
-    await page.locator('.essay-link').first().click();
+    // Hold the destination while inspecting the outgoing fallback. Otherwise a fast
+    // navigation can destroy its context between the class and palette assertions.
+    let releaseNavigation;
+    const navigationGate = new Promise(resolve => { releaseNavigation = resolve; });
+    await page.route(article, route => route.request().frame().parentFrame() ? route.fallback() : navigationGate.then(() => route.continue()));
+    await page.locator('.essay-link').first().click({ noWaitAfter: true });
     await expect(page.locator('html')).toHaveClass(/is-proof-fallback/);
     assert.equal(await page.locator('html').evaluate(n => getComputedStyle(n).getPropertyValue('--proof-bg').trim()), '#201e1b');
+    releaseNavigation();
     await page.waitForURL(article); await ready(page); await settled(page, 'ink');
     await context.close();
   }
   console.log('PASS Ink fallback entry without WebGL and without a measured article');
 
-  for (const width of [320, 360, 600, 768, 1100]) {
-    const context = await ctx({ viewport: { width, height: 844 }, reducedMotion: 'reduce' });
+  for (const width of [320, 360, 390, 600, 601, 768, 1100]) {
+    const context = await ctx({ viewport: { width, height: 844 }, reducedMotion: 'reduce', hasTouch: true });
     const page = await context.newPage(); await page.goto(article); await ready(page);
     const control = page.locator('.reading-mode');
-    await control.click();
+    const bounds = await control.boundingBox();
+    assert(bounds.width >= 44 && bounds.height >= 44, `44px target at ${width}`);
+    await expect(control.locator('svg')).toHaveCount(2);
+    for (const label of await control.locator('.mode-label').all()) {
+      if (width <= 600) await expect(label).toBeHidden();
+      else await expect(label).toBeVisible();
+    }
+    if (width === 320) await capture(page, 'mobile-320', 'paper', 'opening');
+    await control.tap();
     await expect(page.locator('body')).toHaveCSS('background-color', 'rgb(32, 30, 27)');
     assert.equal(await page.locator('html').evaluate(node => getComputedStyle(node).transitionDuration), '0s');
     assert(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), `No overflow at ${width}`);
     const boxes = await page.locator('.top > :not(.marks)').evaluateAll(nodes => nodes.map(n => n.getBoundingClientRect().toJSON()));
     for (let i = 1; i < boxes.length; i++) assert(boxes[i].x >= boxes[i - 1].right - 1, `Header clears at ${width}`);
+    assert(boxes.every(b => b.x >= 0 && b.right <= width), `Header stays within ${width}px viewport`);
+    if (width === 320) await capture(page, 'mobile-320', 'ink', 'opening');
+    await control.tap(); await settled(page, 'paper');
+    await page.reload(); await ready(page); await settled(page, 'paper');
     await context.close();
   }
   console.log('PASS reduced motion and narrow/tablet widths 320–1100px');
@@ -234,7 +264,7 @@ try {
   await second.goto(article); await ready(second);
   await first.locator('.reading-mode').click(); await settled(first, 'ink'); await settled(second, 'ink');
   await first.bringToFront();
-  assert.match(await first.locator('.reading-mode').ariaSnapshot(), /button "Ink reading mode" \[pressed\]/);
+  assert.match(await first.locator('.reading-mode').ariaSnapshot(), /button "Dark reading mode" \[pressed\]/);
   for (const mode of ['ink', 'paper']) {
     if (mode === 'paper') { await first.locator('.reading-mode').click(); await settled(first, mode); }
     for (const link of await first.locator('.after .toc-item').all()) {
