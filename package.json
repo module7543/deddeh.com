@@ -7,7 +7,7 @@
     "dev": "vite --host 0.0.0.0 --port 4173 --strictPort",
     "build": "vite build",
     "preview": "vite preview --host 0.0.0.0",
-    "check": "node --check src/main.js && node --check src/field.js && node --check src/proof.js && node --check src/article.js && node --check src/reading-mode.js && node --check src/projects.js && node --check src/listening.js && node --check src/listening-data.js",
+    "check": "node --check src/main.js && node --check src/field.js && node --check src/proof.js && node --check src/article.js && node --check src/reading-mode.js && node --check src/reading-size.js && node --check src/reading-preferences.js && node --check src/projects.js && node --check src/listening.js && node --check src/listening-data.js",
     "package:reading-preview": "npm run build:pages && node scripts/package-reading-preview.mjs",
     "package:preview": "node scripts/package-preview.mjs",
     "test": "vitest run",

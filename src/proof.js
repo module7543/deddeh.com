@@ -2,6 +2,7 @@
 // and the position of every word on its first screen is read from it. The blocks are then set
 // exactly there, so that when the page arrives its words stand where the blocks stood.
 import { readReadingMode } from './reading-mode.js';
+import { readReadingSize } from './reading-size.js';
 
 const MAX = 140; // one block a bar; the sheet has 140 and a cursor
 const rgb = (text) => (text.match(/[\d.]+/g) ?? [0, 0, 0]).slice(0, 3).map(Number);
@@ -34,8 +35,9 @@ export function createProof({ isReduced, hasField }) {
       if (!main || link.href !== href || doc.readyState !== 'complete' || (doc.fonts && doc.fonts.status !== 'loaded')) return null;
       const view = doc.defaultView, height = view.innerHeight, words = [];
       // A prepared iframe can outlive a preference change (another tab or browser Back).
-      // Changing only colour leaves its exact typography measurements intact.
+      // Apply both choices before layout is read; saved size changes the word positions.
       doc.documentElement.dataset.readingMode = readReadingMode();
+      doc.documentElement.dataset.readingSize = readReadingSize();
       const palette = view.getComputedStyle(doc.documentElement);
       const surface = rgb(palette.backgroundColor);
       const rule = rgb(view.getComputedStyle(doc.querySelector('.top')).borderBottomColor);
@@ -79,7 +81,7 @@ export function createProof({ isReduced, hasField }) {
       bars = bars.slice(0, MAX);
       const box = frame.getBoundingClientRect(), cx = box.width / 2, cy = box.height / 2;
       return {
-        surface: hex(surface), shadow: hex(rule), mode: doc.documentElement.dataset.readingMode,
+        surface: hex(surface), shadow: hex(rule), mode: doc.documentElement.dataset.readingMode, size: doc.documentElement.dataset.readingSize,
         field: bars.map((b) => ({ x: b.l + b.w / 2 - cx, y: b.t + b.h / 2 - cy, w: b.w, h: b.h, c: hex(b.c), z: 0 })),
         page: bars.map((b) => [Math.round(b.l * 10) / 10, Math.round(b.t * 10) / 10, Math.round(b.w * 10) / 10, Math.round(b.h * 10) / 10, hex(b.c)]),
       };

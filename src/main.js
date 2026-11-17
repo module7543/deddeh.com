@@ -202,7 +202,7 @@ function openEssay(event, link) {
   const bars = field ? proof.measure(link) : null;
   root.classList.toggle('is-proof-fallback', !bars);
   const go = () => {
-    try { if (bars) sessionStorage.setItem('deddeh:proof', JSON.stringify({ at: Date.now(), w: window.innerWidth, h: window.innerHeight, bars: bars.page, mode: bars.mode })); } catch { /* storage unavailable */ }
+    try { if (bars) sessionStorage.setItem('deddeh:proof', JSON.stringify({ at: Date.now(), w: window.innerWidth, h: window.innerHeight, bars: bars.page, mode: bars.mode, size: bars.size })); } catch { /* storage unavailable */ }
     location.assign(link.href);
   };
   if (bars) field.proof(proof.frame, bars.field, go, bars); else setTimeout(go, 360);

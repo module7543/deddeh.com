@@ -1,0 +1,370 @@
+{
+  "baseline": [
+    "320px: both palettes, all article geometry and pixels below masthead match c55df7b5",
+    "390px: both palettes, all article geometry and pixels below masthead match c55df7b5",
+    "600px: both palettes, all article geometry and pixels below masthead match c55df7b5",
+    "601px: both palettes, all article geometry and pixels below masthead match c55df7b5",
+    "820px: both palettes, all article geometry and pixels below masthead match c55df7b5",
+    "1100px: both palettes, all article geometry and pixels below masthead match c55df7b5",
+    "1440px: both palettes, all article geometry and pixels below masthead match c55df7b5"
+  ],
+  "sizes": [
+    {
+      "width": 320,
+      "choice": "original",
+      "body": 19,
+      "note": 13,
+      "heading": 31
+    },
+    {
+      "width": 320,
+      "choice": "larger",
+      "body": 21.85,
+      "note": 14.95,
+      "heading": 35.65
+    },
+    {
+      "width": 320,
+      "choice": "largest",
+      "body": 24.7,
+      "note": 16.9,
+      "heading": 40.3
+    },
+    {
+      "width": 320,
+      "choice": "original",
+      "body": 19,
+      "note": 13,
+      "heading": 31
+    },
+    {
+      "width": 390,
+      "choice": "original",
+      "body": 19,
+      "note": 13,
+      "heading": 31
+    },
+    {
+      "width": 390,
+      "choice": "larger",
+      "body": 21.85,
+      "note": 14.95,
+      "heading": 35.65
+    },
+    {
+      "width": 390,
+      "choice": "largest",
+      "body": 24.7,
+      "note": 16.9,
+      "heading": 40.3
+    },
+    {
+      "width": 390,
+      "choice": "original",
+      "body": 19,
+      "note": 13,
+      "heading": 31
+    },
+    {
+      "width": 600,
+      "choice": "original",
+      "body": 19,
+      "note": 13,
+      "heading": 31
+    },
+    {
+      "width": 600,
+      "choice": "larger",
+      "body": 21.85,
+      "note": 14.95,
+      "heading": 35.65
+    },
+    {
+      "width": 600,
+      "choice": "largest",
+      "body": 24.7,
+      "note": 16.9,
+      "heading": 40.3
+    },
+    {
+      "width": 600,
+      "choice": "original",
+      "body": 19,
+      "note": 13,
+      "heading": 31
+    },
+    {
+      "width": 601,
+      "choice": "original",
+      "body": 19,
+      "note": 13,
+      "heading": 31
+    },
+    {
+      "width": 601,
+      "choice": "larger",
+      "body": 21.85,
+      "note": 14.95,
+      "heading": 35.65
+    },
+    {
+      "width": 601,
+      "choice": "largest",
+      "body": 24.7,
+      "note": 16.9,
+      "heading": 40.3
+    },
+    {
+      "width": 601,
+      "choice": "original",
+      "body": 19,
+      "note": 13,
+      "heading": 31
+    },
+    {
+      "width": 820,
+      "choice": "original",
+      "body": 19,
+      "note": 13,
+      "heading": 31
+    },
+    {
+      "width": 820,
+      "choice": "larger",
+      "body": 21.85,
+      "note": 14.95,
+      "heading": 35.65
+    },
+    {
+      "width": 820,
+      "choice": "largest",
+      "body": 24.7,
+      "note": 16.9,
+      "heading": 40.3
+    },
+    {
+      "width": 820,
+      "choice": "original",
+      "body": 19,
+      "note": 13,
+      "heading": 31
+    },
+    {
+      "width": 1100,
+      "choice": "original",
+      "body": 21,
+      "note": 13,
+      "heading": 31
+    },
+    {
+      "width": 1100,
+      "choice": "larger",
+      "body": 24.15,
+      "note": 14.95,
+      "heading": 35.65
+    },
+    {
+      "width": 1100,
+      "choice": "largest",
+      "body": 27.3,
+      "note": 16.9,
+      "heading": 40.3
+    },
+    {
+      "width": 1100,
+      "choice": "original",
+      "body": 21,
+      "note": 13,
+      "heading": 31
+    },
+    {
+      "width": 1440,
+      "choice": "original",
+      "body": 21,
+      "note": 13,
+      "heading": 37.44
+    },
+    {
+      "width": 1440,
+      "choice": "larger",
+      "body": 24.15,
+      "note": 14.95,
+      "heading": 43.056
+    },
+    {
+      "width": 1440,
+      "choice": "largest",
+      "body": 27.3,
+      "note": 16.9,
+      "heading": 48.672
+    },
+    {
+      "width": 1440,
+      "choice": "original",
+      "body": 21,
+      "note": 13,
+      "heading": 37.44
+    }
+  ],
+  "contrast": {
+    "paper": [
+      {
+        "name": "reading-toggle",
+        "ratio": 5.41
+      },
+      {
+        "name": "reading-summary",
+        "ratio": 5.17
+      },
+      {
+        "name": "reading-label",
+        "ratio": 5.17
+      },
+      {
+        "name": "mode-face",
+        "ratio": 6.34
+      },
+      {
+        "name": "mode-face",
+        "ratio": 5.17
+      },
+      {
+        "name": "reading-label",
+        "ratio": 5.17
+      },
+      {
+        "name": "ReadOriginal",
+        "ratio": 5.17
+      },
+      {
+        "name": "size-specimen",
+        "ratio": 14.1
+      },
+      {
+        "name": "ReadLarger",
+        "ratio": 5.17
+      },
+      {
+        "name": "size-specimen",
+        "ratio": 14.1
+      },
+      {
+        "name": "ReadLargest",
+        "ratio": 4.93
+      },
+      {
+        "name": "size-specimen",
+        "ratio": 4.93
+      },
+      {
+        "name": "reading-caption",
+        "ratio": 5.17
+      },
+      {
+        "name": "prose",
+        "ratio": 14.1
+      },
+      {
+        "name": "note",
+        "ratio": 5.17
+      },
+      {
+        "name": "note",
+        "ratio": 5.17
+      },
+      {
+        "name": "note",
+        "ratio": 5.17
+      }
+    ],
+    "ink": [
+      {
+        "name": "reading-toggle",
+        "ratio": 7.69
+      },
+      {
+        "name": "reading-summary",
+        "ratio": 6.57
+      },
+      {
+        "name": "reading-label",
+        "ratio": 6.57
+      },
+      {
+        "name": "mode-face",
+        "ratio": 6.57
+      },
+      {
+        "name": "mode-face",
+        "ratio": 6.69
+      },
+      {
+        "name": "reading-label",
+        "ratio": 6.57
+      },
+      {
+        "name": "ReadOriginal",
+        "ratio": 6.57
+      },
+      {
+        "name": "size-specimen",
+        "ratio": 11.39
+      },
+      {
+        "name": "ReadLarger",
+        "ratio": 6.57
+      },
+      {
+        "name": "size-specimen",
+        "ratio": 11.39
+      },
+      {
+        "name": "ReadLargest",
+        "ratio": 6.14
+      },
+      {
+        "name": "size-specimen",
+        "ratio": 6.14
+      },
+      {
+        "name": "reading-caption",
+        "ratio": 6.57
+      },
+      {
+        "name": "prose",
+        "ratio": 11.39
+      },
+      {
+        "name": "note",
+        "ratio": 6.57
+      },
+      {
+        "name": "note",
+        "ratio": 6.57
+      },
+      {
+        "name": "note",
+        "ratio": 6.57
+      }
+    ]
+  },
+  "proof": [
+    {
+      "appearance": "paper",
+      "scale": "larger",
+      "bars": 111,
+      "firstWordAligned": true
+    },
+    {
+      "appearance": "ink",
+      "scale": "largest",
+      "bars": 95,
+      "firstWordAligned": true
+    }
+  ],
+  "checks": [
+    "320–1440px: all sizes, both appearances, baseline equality, touch, keyboard, reset, reload",
+    "Desktop/mobile word anchor, visual captures, contrast, focus across viewport changes",
+    "Measured proof, Back/Forward, no WebGL, unmeasured fallback, reduced motion, failed JS, denied storage, no JS, cross-tab, print"
+  ]
+}
