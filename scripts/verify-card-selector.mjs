@@ -8,9 +8,27 @@ const base = '/deddeh.com/';
 const server = await preview({ base, preview: { host: '127.0.0.1', port: 0, strictPort: false } });
 const address = 'http://127.0.0.1:' + server.httpServer.address().port + base;
 const url = address + 'projects/apps/card-selector/';
-const browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH || undefined, args: ['--enable-unsafe-swiftshader'] });
+const browser = await chromium.launch({ executablePath: process.env.CHROMIUM_PATH || undefined, args: ['--use-gl=swiftshader', '--enable-unsafe-swiftshader'] });
 const failures = [];
 await mkdir('artifacts', { recursive: true });
+
+// Sample the orange Three.js dot above the frame. A correctly sized DOM frame
+// can still have its blocks drawn far outside it after a width change.
+async function expectTitleDot(page, frame) {
+  await expect.poll(async () => {
+    const { x, y } = await frame.boundingBox();
+    const pixel = await page.screenshot({ clip: { x: Math.round(x + 4), y: Math.round(y - 13), width: 1, height: 1 } });
+    return page.evaluate(async base64 => {
+      const img = new Image();
+      img.src = 'data:image/png;base64,' + base64;
+      await img.decode();
+      const ctx = document.createElement('canvas').getContext('2d');
+      ctx.drawImage(img, 0, 0);
+      const [r, g, b] = ctx.getImageData(0, 0, 1, 1).data;
+      return r > 180 && r - g > 50 && g - b > 30;
+    }, pixel.toString('base64'));
+  }, { message: 'The orange title-bar dot should sit just above the current frame' }).toBe(true);
+}
 
 async function swipe(page) {
   const box = await page.locator('.app-bar').boundingBox();
@@ -46,10 +64,12 @@ try {
     await frame.scrollIntoViewIfNeeded();
     await button('Dark').click();
     await expect(viewer.locator('.wallet-screen')).toHaveCSS('color-scheme', 'dark');
+    if (!phone) await expectTitleDot(page, frame);
     await button('Phone').click();
     const narrow = await frame.boundingBox();
     await button('Desktop').click();
     const wide = await frame.boundingBox();
+    if (!phone) await expectTitleDot(page, frame);
     assert(wide.width > narrow.width, 'The rails enclose the selected width');
     assert((await viewer.locator('.wallet-screen').evaluate(el => el.clientWidth)) >= 568, 'Wide mode lays out desktop content even on a phone');
     await button('Light').click();

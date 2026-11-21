@@ -259,6 +259,12 @@ void main() {
 const PAPER = 0xece6d8, SHADOW = 0x0b0a09, PAPER_SHADOW = 0xcfc7b5;
 const ease = (t) => (t < .5 ? 4 * t * t * t : 1 - ((-2 * t + 2) ** 3) / 2);
 
+function slotScale(slot) {
+  return window.innerWidth <= 820
+    ? Math.min((window.innerWidth * .84) / W, (slot.height * 1.3) / (ROWS * PITCH * .62))
+    : Math.min((slot.width * 1.04) / W, (window.innerHeight * .95) / (ROWS * PITCH * .62));
+}
+
 export class Field {
   constructor(stage, slot, reducedMotion) {
     this.stage = stage; this.slot = slot; this.reduced = reducedMotion;
@@ -344,8 +350,7 @@ export class Field {
     const w = window.innerWidth, h = window.innerHeight;
     const slot = this.slot.getBoundingClientRect();
     const narrow = w <= 820;
-    const scale = narrow ? Math.min((w * .84) / W, (slot.height * 1.3) / (ROWS * PITCH * .62)) : Math.min((slot.width * 1.04) / W, (h * .95) / (ROWS * PITCH * .62));
-    this.fit = scale * (this.to?.spectral ? (narrow ? .84 : .88) : 1);
+    this.fit = slotScale(slot) * (this.to?.spectral ? (narrow ? .84 : .88) : 1);
     if (!gsap.isTweening(this.group.scale)) this.group.scale.setScalar(this.fit);
     const cx = narrow ? w * .5 : slot.left + slot.width * .5;
     const cy = slot.top + slot.height * (narrow ? .56 : .41);
@@ -395,7 +400,10 @@ export class Field {
   // Lay the sheet flat behind a DOM element and set the blocks from its parts.
   // Bars are in CSS pixels from the element's centre (y down); they follow it as it scrolls.
   card(element, bars, cursor, duration) {
-    const unit = 1 / this.group.scale.x, base = this.formations.blank;
+    // An app frame is itself the slot. Its DOM bars can be measured before
+    // the resize observer or a scale tween has fitted the group to that slot.
+    const scale = element === this.slot ? slotScale(element.getBoundingClientRect()) : this.group.scale.x;
+    const unit = 1 / scale, base = this.formations.blank;
     const place = (bar) => ({ x: bar.x * unit, y: -bar.y * unit, w: bar.w * unit, h: bar.h * unit, z: bar.z ?? 0, c: bar.c });
     const to = base.map((b, i) => (i < CURSOR && bars[i] ? place(bars[i]) : { ...b, w: 0, z: 0 }));
     if (cursor) to[CURSOR] = place(cursor);
