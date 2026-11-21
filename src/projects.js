@@ -91,32 +91,59 @@ function recordings(viewer) {
   const play = controls.querySelector('.film-play');
   const themes = [...controls.querySelectorAll('[data-pick]')];
   const visible = new Set();
-  let paused = false;
+  const pending = new Map();
+  let intent = 'auto';
   viewer.dataset.theme = 'light';
   controls.hidden = false;
 
+  function isPlaying(video) {
+    return !video.paused && !video.ended && !video.seeking && video.readyState >= video.HAVE_FUTURE_DATA;
+  }
+  function syncControl() {
+    const playing = videos.some(isPlaying);
+    play.textContent = playing ? 'Pause clip' : 'Play clip';
+    play.toggleAttribute('data-paused', !playing);
+  }
   function update() {
     const active = videos.filter(video => visible.has(video) && video.closest('.shot.is-on') && video.offsetWidth);
-    const running = active.find(video => !video.paused);
+    const running = active.find(isPlaying);
+    const requested = intent === 'play' || (intent === 'auto' && !motion.matches);
     for (const video of videos) {
-      if (paused || document.hidden || motion.matches || !active.includes(video)) {
+      if (!requested || document.hidden || !active.includes(video)) {
+        pending.delete(video);
         video.pause();
-      } else if (video.paused) {
+      } else if (video.paused && !pending.has(video)) {
         if (running && video.readyState > 0) video.currentTime = running.currentTime;
-        video.play().catch(() => {}); // The poster remains available when autoplay is blocked.
+        const attempt = video.play();
+        pending.set(video, attempt);
+        attempt.then(() => {
+          if (pending.get(video) === attempt) pending.delete(video);
+          syncControl();
+        }, () => {
+          // A pause, theme switch or navigation can cancel an older request.
+          if (pending.get(video) !== attempt) return;
+          intent = 'pause';
+          update(); // Stop both prints so the next press retries the pair.
+        });
       }
+    }
+    syncControl();
+  }
+  for (const video of videos) {
+    video.controls = false;
+    for (const event of ['playing', 'pause', 'waiting', 'seeking', 'seeked', 'ended', 'emptied', 'error']) {
+      video.addEventListener(event, syncControl);
     }
   }
   function preference() {
     if (motion.matches) {
-      for (const video of videos) { video.pause(); video.load(); } // Restore the authored poster.
+      if (intent === 'play') intent = 'auto';
+      for (const video of videos) { pending.delete(video); video.pause(); video.load(); }
     }
     update();
   }
   play.addEventListener('click', () => {
-    paused = !paused;
-    play.textContent = paused ? 'Play clip' : 'Pause clip';
-    play.toggleAttribute('data-paused', paused);
+    intent = videos.some(isPlaying) ? 'pause' : 'play';
     update();
   });
   for (const choice of themes) choice.addEventListener('click', () => {
@@ -140,6 +167,7 @@ function recordings(viewer) {
       observer.disconnect();
       document.removeEventListener('visibilitychange', update);
       motion.removeEventListener('change', preference);
+      pending.clear();
       videos.forEach(video => video.pause());
     },
   };

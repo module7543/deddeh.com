@@ -172,6 +172,31 @@ try {
     await page.waitForTimeout(1500);
     await page.screenshot({ path: `artifacts/pages-${mobile ? 'mobile' : 'desktop'}.png`, fullPage: true });
     console.log(`PASS ${mobile ? 'mobile touch/reduced motion' : 'desktop hover/keyboard'}: HTTP 200, assets, pin/unpin, statement and figure, mocked contact flow, Escape, arrow navigation, Writing index, essay and back, Projects, both collections, an application, a track and back, no overflow — ${url}`);
+    // A phone starts on its reduced-motion poster. On desktop simulate a browser that requires a gesture.
+    if (!mobile) await page.addInitScript(() => {
+      const play = HTMLMediaElement.prototype.play;
+      HTMLMediaElement.prototype.play = function () {
+        if (this instanceof HTMLVideoElement && !navigator.userActivation.isActive) {
+          window.autoplayRejected = true;
+          return Promise.reject(new DOMException('User gesture required', 'NotAllowedError'));
+        }
+        return play.call(this);
+      };
+    });
+    await page.goto(new URL('projects/apps/card-selector/', url).href);
+    if (!mobile) await page.waitForFunction(() => window.autoplayRejected);
+    const clips = page.locator('.shot.is-on video:visible');
+    const start = page.getByRole('button', { name: 'Play clip', exact: true });
+    const stop = page.getByRole('button', { name: 'Pause clip', exact: true });
+    await expect(start).toBeVisible();
+    await expect(clips).toHaveCount(mobile ? 1 : 2);
+    assert(await clips.evaluateAll(videos => videos.every(v => v.paused && v.currentTime === 0)));
+    await press(start);
+    await expect(stop).toBeVisible();
+    await expect.poll(() => clips.evaluateAll(videos => videos.every(v => !v.paused && v.currentTime > 0))).toBe(true);
+    await press(stop);
+    await expect(start).toBeVisible();
+    assert(await clips.evaluateAll(videos => videos.every(v => v.paused)));
     await context.close();
   }
   assert.deepEqual(failures, [], 'No failed assets or JavaScript page errors');
