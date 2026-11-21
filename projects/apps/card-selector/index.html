@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#141311" />
+    <meta name="description" content="A private phone app for choosing a card at the register or online. A merchant search, shown with fictional offers." />
+    <title>CardSelector · Deddeh.com</title>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  </head>
+  <body>
+    <a class="skip-link" href="#room">Skip to the page</a>
+    <div class="stage" aria-hidden="true"></div>
+    <div class="grain" aria-hidden="true"></div>
+    <div class="shell">
+      <header class="top">
+        <a class="identity" href="../../../" aria-label="deddeh.com, home">deddeh.com<span class="caret" aria-hidden="true"></span></a>
+        <a class="return" href="../" data-room><span aria-hidden="true">←</span> <b>Apps</b></a>
+        <p class="marks" aria-hidden="true"><span data-mark="writing"></span><span data-mark="projects" class="is-on"></span><span data-mark="contact"></span></p>
+      </header>
+
+      <main id="room" data-view="app" data-tone="apps" tabindex="-1">
+        <article class="showcase card-showcase">
+          <header class="show-head">
+            <p class="show-no">Apps · A02</p>
+            <h1>Card<wbr><mark>Selector</mark></h1>
+            <p class="dek">Which card would I use here?</p>
+          </header>
+
+          <section class="viewer film-viewer" aria-label="Recorded demonstration">
+            <div class="film-heading">
+              <h2>Merchant search</h2>
+              <span class="film-figure">Fig. 01</span>
+            </div>
+            <div class="frame">
+              <figure class="shot" data-label="Merchant search">
+                <div class="film-pair">
+                  <div class="film-print" data-theme="light">
+                    <p class="film-label">Light</p>
+                    <video src="./merchant-light.mp4" poster="./merchant-light.webp" width="752" height="1084"
+                      preload="none" muted loop playsinline aria-label="Merchant search in light mode. Rill earns 8% now. Foldline earns 10% after activation."></video>
+                  </div>
+                  <div class="film-print" data-theme="dark">
+                    <p class="film-label">Dark</p>
+                    <video src="./merchant-dark.mp4" poster="./merchant-dark.webp" width="752" height="1084"
+                      preload="none" muted loop playsinline aria-label="Merchant search in dark mode. Rill earns 8% now. Foldline earns 10% after activation."></video>
+                  </div>
+                </div>
+                <figcaption>Search for Spindlewick, then choose Online. Two cards match. One offer needs activating.</figcaption>
+              </figure>
+            </div>
+            <div class="film-controls" hidden>
+              <div class="theme-choices" role="group" aria-label="Recording theme">
+                <button type="button" data-pick="light" aria-pressed="true">Light</button>
+                <button type="button" data-pick="dark" aria-pressed="false">Dark</button>
+              </div>
+              <button type="button" class="film-play">Pause clip</button>
+            </div>
+          </section>
+
+          <div class="show-body">
+            <section class="about" aria-label="About CardSelector">
+              <p>I type the name of a shop and see what each card earns there. The offer sits beside the card’s usual rate, so I can see what adds up and what I still have to activate.</p>
+            </section>
+            <dl class="spec">
+              <div><dt>Runs on</dt><dd>Web browser</dd></div>
+              <div><dt>Made with</dt><dd>HTML, CSS, JavaScript</dd></div>
+            </dl>
+            <aside class="access" aria-label="Access">
+              <p class="access-state"><span class="lock" aria-hidden="true"></span>Private</p>
+              <p>I use this with my own cards. The cards, shops and offers in the recording are fictional.</p>
+              <p class="access-ask"><a href="../../../#contact">Write to me</a>.</p>
+            </aside>
+          </div>
+        </article>
+      </main>
+
+    </div>
+    <script type="module" src="/src/projects.js"></script>
+  </body>
+</html>

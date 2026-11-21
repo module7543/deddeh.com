@@ -153,3 +153,45 @@ html:not(.has-field) .tab[aria-pressed='true'] { border-bottom-color: var(--acce
 @media (prefers-reduced-motion: reduce) {
   .return span, .rooms .word, .entry-name, .entry-go, .shot, .js .shot.is-on, .tab, .play, .scrub-bars i, .access .open, .track-step-title { transition: none; }
 }
+
+/* The two prints share a baseline so the same gesture reads across the frame. */
+.card-showcase .show-head { container-type: inline-size; }
+.card-showcase h1 { font-size: min(14.8cqi, 100px); }
+.card-showcase .show-no { display: flex; align-items: center; gap: 12px; }
+.card-showcase .show-no::before { content: ''; width: 24px; height: 6px; background: var(--accent); }
+.card-showcase .show-body { align-self: start; }
+.card-showcase { grid-template-rows: auto 1fr; }
+.film-viewer { position: relative; top: auto; }
+.film-heading, .film-label, .film-controls { font: 400 13px/1.5 var(--mono); }
+.film-heading { display: flex; align-items: baseline; justify-content: space-between; gap: 1em; }
+.film-heading h2 { font: 550 clamp(21px, 2vw, 30px)/1.2 var(--sans); letter-spacing: -.035em; }
+.film-figure { color: var(--muted); }
+.film-viewer .frame { background: transparent; aspect-ratio: auto; margin: 30px 0 18px; }
+.js .film-viewer .shot { position: static; display: none; }
+.js .film-viewer .shot.is-on { display: block; }
+.film-pair { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 2px; }
+.film-label { padding: 8px 14px; color: var(--ink); background: #2c2924; }
+.film-print video { width: 100%; height: auto; display: block; }
+.film-controls:not([hidden]) { display: flex; justify-content: flex-end; align-items: baseline; gap: 16px; }
+.film-controls button { color: var(--ink); min-height: 44px; }
+.film-controls button:hover { color: var(--accent); }
+.theme-choices { display: none; }
+.film-play::before { content: 'Ⅱ'; margin-right: .6em; color: var(--orange); }
+.film-play[data-paused]::before { content: '▷'; }
+.film-viewer .caption { margin-top: 0; max-width: 36em; }
+@media (max-width: 820px) {
+  .card-showcase { grid-template-rows: auto; }
+  .film-viewer { margin-top: 32px; }
+}
+@media (max-width: 620px) {
+  .film-pair { grid-template-columns: 1fr; }
+  .js .film-viewer[data-theme='light'] [data-theme='dark'],
+  .js .film-viewer[data-theme='dark'] [data-theme='light'] { display: none; }
+  .js .film-label { display: none; }
+  .theme-choices { display: flex; gap: 18px; margin-right: auto; }
+  .theme-choices [aria-pressed='true'] { text-decoration: underline 2px var(--accent); text-underline-offset: 5px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .film-play { display: none; }
+  .film-viewer .caption { margin-top: 12px; }
+}

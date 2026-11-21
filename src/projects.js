@@ -83,6 +83,68 @@ function shelf(page) {
   };
 }
 
+// Recorded screens share the existing viewer's chapter selection and page lifecycle.
+function recordings(viewer) {
+  const videos = [...viewer.querySelectorAll('video')];
+  if (!videos.length) return null;
+  const controls = viewer.querySelector('.film-controls');
+  const play = controls.querySelector('.film-play');
+  const themes = [...controls.querySelectorAll('[data-pick]')];
+  const visible = new Set();
+  let paused = false;
+  viewer.dataset.theme = 'light';
+  controls.hidden = false;
+
+  function update() {
+    const active = videos.filter(video => visible.has(video) && video.closest('.shot.is-on') && video.offsetWidth);
+    const running = active.find(video => !video.paused);
+    for (const video of videos) {
+      if (paused || document.hidden || motion.matches || !active.includes(video)) {
+        video.pause();
+      } else if (video.paused) {
+        if (running && video.readyState > 0) video.currentTime = running.currentTime;
+        video.play().catch(() => {}); // The poster remains available when autoplay is blocked.
+      }
+    }
+  }
+  function preference() {
+    if (motion.matches) {
+      for (const video of videos) { video.pause(); video.load(); } // Restore the authored poster.
+    }
+    update();
+  }
+  play.addEventListener('click', () => {
+    paused = !paused;
+    play.textContent = paused ? 'Play clip' : 'Pause clip';
+    play.toggleAttribute('data-paused', paused);
+    update();
+  });
+  for (const choice of themes) choice.addEventListener('click', () => {
+    viewer.dataset.theme = choice.dataset.pick;
+    themes.forEach(button => button.setAttribute('aria-pressed', String(button === choice)));
+    update();
+  });
+  const observer = new IntersectionObserver(entries => {
+    for (const entry of entries) {
+      if (entry.isIntersecting && entry.intersectionRatio > 0) visible.add(entry.target);
+      else visible.delete(entry.target);
+    }
+    update();
+  });
+  videos.forEach(video => observer.observe(video));
+  document.addEventListener('visibilitychange', update);
+  motion.addEventListener('change', preference);
+  return {
+    update,
+    destroy() {
+      observer.disconnect();
+      document.removeEventListener('visibilitychange', update);
+      motion.removeEventListener('change', preference);
+      videos.forEach(video => video.pause());
+    },
+  };
+}
+
 // ---- An application: its screens in a frame the blocks draw, one tab a screen.
 function app(page) {
   const viewer = page.querySelector('.viewer'), frame = page.querySelector('.frame');
@@ -101,6 +163,7 @@ function app(page) {
   });
   if (shots.length > 1) viewer.append(tabs);
   viewer.append(caption);
+  const media = recordings(viewer);
   let current = -1;
 
   // The frame's parts, in CSS pixels from its centre: a title bar, two rails, a foot, and a rule under each tab.
@@ -132,6 +195,7 @@ function app(page) {
     shots.forEach((shot, n) => shot.classList.toggle('is-on', n === current));
     buttons.forEach((tab, n) => tab.setAttribute('aria-pressed', String(n === current)));
     caption.textContent = shots[current].querySelector('figcaption')?.textContent ?? '';
+    media?.update();
     draw(duration);
   }
   tabs.addEventListener('keydown', (event) => {
@@ -156,7 +220,7 @@ function app(page) {
   show(0, 0);
   return {
     set(duration) { field.setSlot(frame); field.setHead(null); draw(duration); field.light('apps'); },
-    destroy() { watch?.disconnect(); },
+    destroy() { watch?.disconnect(); media?.destroy(); },
   };
 }
 
