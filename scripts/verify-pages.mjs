@@ -121,9 +121,9 @@ try {
     await press(page.locator('.collection-link[data-collection="apps"]'));
     await page.waitForURL(/\/projects\/apps\/$/);
     await expect(page.locator('.rooms .is-active')).toContainText('Apps');
-    await expect(page.locator('.manifest .entry')).toHaveCount(1);
+    await expect(page.locator('.manifest .entry')).toHaveCount(2);
     await noOverflow('on Apps');
-    await press(page.locator('.manifest .entry').first());
+    await press(page.getByRole('link', { name: /Sample App/ }));
     await page.waitForURL(/\/projects\/apps\/sample-app\/$/);
     await expect(page.locator('.showcase h1')).toBeVisible();
     await expect(page.locator('.slug')).toContainText('Not a real application');
@@ -137,7 +137,7 @@ try {
     await page.screenshot({ path: `artifacts/pages-app-${mobile ? 'mobile' : 'desktop'}.png`, fullPage: true });
     await page.goBack();
     await expect(page).toHaveURL(/\/projects\/apps\/$/);
-    await expect(page.locator('.manifest .entry')).toBeVisible();
+    await expect(page.getByRole('link', { name: /CardSelector/ })).toBeVisible();
     await page.goForward();
     await expect(page).toHaveURL(/\/projects\/apps\/sample-app\/$/);
     await expect(page.locator('.showcase h1')).toBeVisible();
