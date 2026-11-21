@@ -46,7 +46,7 @@ Vite finds every `writing/*/index.html` by itself. `npm run package:preview` bun
 
 ## Projects
 
-Projects is a small collection of things made, in collections. Today: **Apps** and **Music**. Apps retains its design samples. Music now includes **Sweet on My Tongue**, an original recording with synchronized lyrics and an audio-derived Three.js relief.
+Projects is a small collection of things made, in collections. Today: **Apps** and **Music**. Apps includes **CardSelector**, a private merchant-bonus lookup shown through a five-chapter interactive demo on an invented wallet, alongside the original Sample App design study. Music now includes **Sweet on My Tongue**, an original recording with synchronized lyrics and an audio-derived Three.js relief.
 
 - **On the homepage.** Hover or focus still only previews Projects. Choosing it opens the collections under the word, as Writing opens its essays. Moving over a collection (or tabbing to it) sets the sheet as that collection: a window for Apps (Fig. 2a), a piano-roll score for Music (Fig. 2b), as the ground begins to take Music’s deeper colour. Choosing one lets the sheet finish, clears the index, and opens the collection's page with the sheet standing where it stood.
 - **The room.** `projects/<collection>/` and `projects/<collection>/<slug>/` are real pages (`src/projects.js`, `src/projects.css`). Each opens and reloads on its own; links between them swap the page's `<main>` without a reload (History API), so the sheet stays and is re-set. Back and Forward work throughout. Apps keeps the homepage’s collection index; Music has its own masthead and recording index. `projects/` itself redirects to `#projects`.

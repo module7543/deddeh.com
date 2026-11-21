@@ -8,6 +8,8 @@ import '@fontsource/ibm-plex-mono/latin-400.css';
 import '@fontsource/ibm-plex-mono/latin-500.css';
 import './style.css';
 import './projects.css';
+import './card-selector/showcase.css';
+import { mountTour } from './card-selector/tour.js';
 import { gsap } from 'gsap';
 import { listening } from './listening.js';
 import { validateAnalysis } from './listening-data.js';
@@ -87,6 +89,8 @@ function shelf(page) {
 function app(page) {
   const viewer = page.querySelector('.viewer'), frame = page.querySelector('.frame');
   const shots = [...frame.querySelectorAll('.shot')];
+  const live = page.hasAttribute('data-card-selector');
+  let tour;
   const tabs = make('div', 'tabs'), caption = make('p', 'caption');
   tabs.setAttribute('role', 'group');
   tabs.setAttribute('aria-label', 'Choose a screen');
@@ -99,8 +103,8 @@ function app(page) {
     tabs.append(tab);
     return tab;
   });
-  if (shots.length > 1) viewer.append(tabs);
-  viewer.append(caption);
+  if (shots.length > 1) frame.after(tabs, caption);
+  else frame.after(caption);
   let current = -1;
 
   // The frame's parts, in CSS pixels from its centre: a title bar, two rails, a foot, and a rule under each tab.
@@ -112,7 +116,8 @@ function app(page) {
     [C.orange, C.dim, C.dim].forEach((c, i) => bar(R.left + i * 13, R.top - 17, 8, 8, c, i ? 0 : .6));
     bar(R.left + 52, R.top - 17, R.width * .32, 8, C.dim); bar(R.left + 56 + R.width * .32, R.top - 17, R.width * .1, 8, C.dim);
     bar(R.right - 44, R.top - 17, 44, 8, C.dim);
-    for (let i = 0; i < 4; i++) { bar(R.left - 10, R.top + (R.height * i) / 4 + 2, 4, R.height / 4 - 4, C.dim); bar(R.right + 6, R.top + (R.height * i) / 4 + 2, 4, R.height / 4 - 4, C.dim); }
+    const rail = frame.dataset.signal === 'reward' ? C.green : frame.dataset.signal ? C.orange : C.dim;
+    for (let i = 0; i < 4; i++) { bar(R.left - 10, R.top + (R.height * i) / 4 + 2, 4, R.height / 4 - 4, rail); bar(R.right + 6, R.top + (R.height * i) / 4 + 2, 4, R.height / 4 - 4, rail); }
     for (let i = 0; i < 8; i++) bar(R.left + (R.width * i) / 8 + 2, R.bottom + 7, R.width / 8 - 4, 4, C.dim);
     let cursor = null;
     if (shots.length > 1) buttons.forEach((tab, i) => {
@@ -132,6 +137,7 @@ function app(page) {
     shots.forEach((shot, n) => shot.classList.toggle('is-on', n === current));
     buttons.forEach((tab, n) => tab.setAttribute('aria-pressed', String(n === current)));
     caption.textContent = shots[current].querySelector('figcaption')?.textContent ?? '';
+    tour?.selectChapter(current);
     draw(duration);
   }
   tabs.addEventListener('keydown', (event) => {
@@ -143,20 +149,21 @@ function app(page) {
   });
   // A swipe across the frame turns to the next screen.
   let from = null;
-  frame.addEventListener('pointerdown', (event) => { from = event.clientX; });
+  frame.addEventListener('pointerdown', (event) => { from = [event.clientX, event.clientY]; });
   frame.addEventListener('pointerup', (event) => {
     if (from === null) return;
-    const dx = event.clientX - from; from = null;
-    if (Math.abs(dx) > 44 && shots.length > 1) show(current + (dx < 0 ? 1 : -1));
+    const dx = event.clientX - from[0], dy = event.clientY - from[1]; from = null;
+    if (Math.abs(dx) > 44 && Math.abs(dx) > Math.abs(dy) * 1.3 && shots.length > 1) show(current + (dx < 0 ? 1 : -1));
   });
   frame.addEventListener('pointercancel', () => { from = null; });
   const redraw = () => draw(.3);
   const watch = typeof ResizeObserver !== 'undefined' ? new ResizeObserver(redraw) : null;
   watch?.observe(frame); watch?.observe(viewer);
+  if (live) tour = mountTour(viewer, frame, show, draw, motion);
   show(0, 0);
   return {
     set(duration) { field.setSlot(frame); field.setHead(null); draw(duration); field.light('apps'); },
-    destroy() { watch?.disconnect(); },
+    destroy() { watch?.disconnect(); tour?.destroy(); },
   };
 }
 
